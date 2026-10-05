@@ -17,7 +17,7 @@ Para testar com segurança numa VM Arch:
    pacotes oficiais e aplica os arquivos com backup:
 
    ```bash
-   curl -fLO https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/instalar.sh
+   curl -fLO https://raw.githubusercontent.com/Ronilsondev/gh0stzk-hyprland/main/instalar.sh
    bash instalar.sh --dry-run     # leia o plano antes
    bash instalar.sh
    ```

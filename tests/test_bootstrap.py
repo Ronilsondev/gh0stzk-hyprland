@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -28,7 +29,12 @@ class BootstrapTests(unittest.TestCase):
         cls.osfile = Path(cls.base.name) / 'os-release'
         cls.osfile.write_text('ID=arch\n')
         script = cls.repo / 'instalar.sh'
-        script.write_text(script.read_text().replace('source /etc/os-release', 'source "' + str(cls.osfile) + '"'))
+        # The fixture exercises the unpublished state: PROJECT_REPO empty, so the
+        # origin must come from `git remote -v`. The real value is checked separately
+        # by PolicyTests.test_published_origin_matches_remote.
+        script.write_text(re.sub(r"(?m)^PROJECT_REPO='[^']*'$", "PROJECT_REPO=''",
+                                  script.read_text().replace(
+                                      'source /etc/os-release', 'source "' + str(cls.osfile) + '"')))
         backend = cls.repo / 'tools/bootstrap.py'
         backend.write_text(backend.read_text().replace("Path('/etc/os-release')", 'Path(' + repr(str(cls.osfile)) + ')'))
         cls.git = shutil.which('git')
@@ -352,6 +358,15 @@ class PolicyTests(unittest.TestCase):
                       session_admin.desktop(Path(r'/home/a\b')).decode())
         self.assertEqual(session_admin.desktop(Path('/home/x')).decode().count('Exec='), 1)
 
+    def test_published_origin_matches_remote(self):
+        script = ROOT / 'instalar.sh'
+        self.assertEqual(validate.installer_origin(script.read_text()),
+                         'https://github.com/Ronilsondev/gh0stzk-hyprland')
+        # The single source of truth has to be the published remote, not a guess.
+        validate.check_installer(script)
+        origin = subprocess.check_output(['git', '-C', str(ROOT), 'remote', 'get-url', 'origin'], text=True).strip()
+        self.assertIn('Ronilsondev/gh0stzk-hyprland', origin)
+
     def test_installer_markers_and_upstream_guard(self):
         with tempfile.TemporaryDirectory() as tmp:
             script = Path(tmp) / 'instalar.sh'
@@ -359,13 +374,26 @@ class PolicyTests(unittest.TestCase):
             script.chmod(0o755)
             original = script.read_text()
             self.assertIn('PROJECT_REPO', validate.check_installer(script))
-            for broken, expected in (
-                    ("PROJECT_REPO=''", 'PROJECT_REPO'),
-                    ('--dry-run', '--dry-run'),
-                    ('pacman -Syu --needed', 'pacman -Syu --needed')):
-                script.write_text(original.replace(broken, 'REMOVIDO'))
-                with self.assertRaisesRegex(ValueError, expected):
+            for marker in ('--dry-run', 'pacman -Syu --needed'):
+                script.write_text(original.replace(marker, 'REMOVIDO'))
+                with self.assertRaisesRegex(ValueError, marker.split()[0]):
                     validate.check_installer(script)
+            # PROJECT_REPO vazio é o estado de cópia local ainda não publicada.
+            blanked = re.sub(r"(?m)^PROJECT_REPO='[^']*'$", "PROJECT_REPO=''", original)
+            self.assertEqual(validate.installer_origin(blanked), '')
+            script.write_text(blanked)
+            validate.check_installer(script)
+            # A origem fixada precisa coincidir com o remote origin publicado.
+            subprocess.run(['git', 'init', '-q', str(tmp)], check=True, capture_output=True)
+            subprocess.run(['git', '-C', str(tmp), 'remote', 'add', 'origin',
+                            'https://github.com/outro/repo.git'], check=True, capture_output=True)
+            script.write_text(original)
+            with self.assertRaisesRegex(ValueError, 'não é o remote origin'):
+                validate.check_installer(script)
+            subprocess.run(['git', '-C', str(tmp), 'remote', 'set-url', 'origin',
+                            'git@github.com:Ronilsondev/gh0stzk-hyprland.git'],
+                           check=True, capture_output=True)
+            validate.check_installer(script)
             # A partial upgrade or a non-interactive transaction must be refused.
             for bad in ('sudo pacman -Sy --needed -- base-devel', 'sudo pacman -Syu --noconfirm -- x'):
                 script.write_text(original.replace('sudo pacman -Syu --needed -- "${missing[@]}"', bad))
@@ -375,10 +403,12 @@ class PolicyTests(unittest.TestCase):
                                                'python3 -B "$root/tools/bootstrap.py" --allow-missing'))
             with self.assertRaisesRegex(ValueError, '--allow-missing'):
                 validate.check_installer(script)
-            script.write_text(original.replace(
-                "PROJECT_REPO=''", "PROJECT_REPO='https://github.com/gh0stzk/dotfiles'", 1))
-            with self.assertRaisesRegex(ValueError, 'upstream'):
-                validate.check_installer(script)
+            for bad, expected in (('https://github.com/gh0stzk/dotfiles', 'upstream'),
+                                  ('git@github.com:Ronilsondev/gh0stzk-hyprland', 'HTTPS'),
+                                  ('https://gitlab.com/a/b', 'HTTPS')):
+                script.write_text(re.sub(r"(?m)^PROJECT_REPO='[^']*'$", "PROJECT_REPO='" + bad + "'", original))
+                with self.assertRaisesRegex(ValueError, expected):
+                    validate.check_installer(script)
             script.chmod(0o644)
             with self.assertRaisesRegex(ValueError, 'permissão'):
                 validate.check_installer(script)

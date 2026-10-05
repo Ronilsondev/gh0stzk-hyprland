@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+UPSTREAM_REPO = 'https://github.com/gh0stzk/dotfiles'
 sys.path.insert(0, str(ROOT / 'lib'))
 from render import materialize, render, theme
 from runtime import validate_generation
@@ -36,18 +37,34 @@ def check_balanced(path):
         raise ValueError(f'Delimitadores abertos: {path}')
 
 
+def installer_origin(text):
+    """Origem fixada no instalador: um único lugar, nunca o upstream, e igual ao
+    remote 'origin' quando o projeto é um repositório Git já publicado.
+    Vazio é aceito: uma cópia local ainda não publicada funciona assim."""
+    match = re.search(r'''(?m)^PROJECT_REPO\s*=\s*(['"]?)([^'"\n]*)\1''', text)
+    if not match:
+        raise ValueError('instalar.sh sem PROJECT_REPO no topo do arquivo')
+    repo = match.group(2).strip().rstrip('/').removesuffix('.git')
+    if repo and repo == UPSTREAM_REPO:
+        raise ValueError('instalar.sh não pode apontar a origem para o upstream do gh0stzk')
+    if repo and not re.fullmatch(r'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
+        raise ValueError('PROJECT_REPO precisa ser a URL HTTPS de um repositório do GitHub: ' + repo)
+    if not re.search(r'''(?m)^PROJECT_REF\s*=\s*(['"]?)([^\n'"]+)\1''', text):
+        raise ValueError('instalar.sh sem PROJECT_REF no topo do arquivo')
+    return repo
+
+
 def check_installer(path):
     """O instalador é o único bootstrap: exigimos origem centralizada e
     atualização total. Só marcação e sintaxe; o comportamento é testado em tests/."""
     path = Path(path)
     if not path.is_file():
-        raise ValueError('instalar.sh ausente na raiz do projeto')
+        raise ValueError('Executável ausente na raiz do projeto: ' + str(path))
     if not os.access(path, os.X_OK):
         raise ValueError('Executável sem permissão: ' + str(path))
     text = path.read_text()
-    if re.search(r'''PROJECT_REPO\s*=\s*['"]?https://github\.com/gh0stzk/dotfiles''', text):
-        raise ValueError('instalar.sh não pode apontar a origem para o upstream do gh0stzk')
-    for marker in ("PROJECT_REPO=''", 'PROJECT_REF=', '--dry-run', '--yes', '--help',
+    repo = installer_origin(text)
+    for marker in ('--dry-run', '--yes', '--help',
                    'pacman -Syu --needed', 'git -C "$tmp" init', 'FETCH_HEAD^{commit}'):
         if marker not in text:
             raise ValueError('instalar.sh sem o item obrigatório: ' + marker)
@@ -60,6 +77,16 @@ def check_installer(path):
             raise ValueError('instalar.sh exige atualização total e interativa: ' + line.strip())
     if '--allow-missing' in body:
         raise ValueError('instalar.sh não pode mascarar dependências com --allow-missing')
+    # A origem fixada tem que ser a mesma do remote 'origin' do projeto publicado.
+    origin = subprocess.run(['git', '-C', str(path.parent), 'remote', 'get-url', 'origin'],
+                            capture_output=True, text=True)
+    if repo and origin.returncode == 0 and origin.stdout.strip():
+        remote = origin.stdout.strip()
+        if remote.startswith('git@github.com:'):
+            remote = 'https://github.com/' + remote.split(':', 1)[1]
+        remote = remote.rstrip('/').removesuffix('.git')
+        if remote != repo:
+            raise ValueError('PROJECT_REPO não é o remote origin: ' + repo + ' != ' + remote)
     return text
 
 

@@ -12,7 +12,7 @@ export PYTHONDONTWRITEBYTECODE=1
 # Se PROJECT_REPO ficar vazio, o instalador tenta descobrir pelo remote "origin"
 # da cópia local completa (mesmo valor exibido por `git remote -v`).
 # ────────────────────────────────────────────────────────────────────────────
-PROJECT_REPO=''
+PROJECT_REPO='https://github.com/Ronilsondev/gh0stzk-hyprland'
 PROJECT_REF='main'
 
 UPSTREAM_REPO='https://github.com/gh0stzk/dotfiles'
@@ -56,7 +56,7 @@ Exemplos:
   bash instalar.sh --dry-run
   bash instalar.sh
   bash instalar.sh --yes --optional hyprpicker --optional pacman-contrib
-  bash instalar.sh --repo https://github.com/SEU_USUARIO/SEU_REPO --ref main
+  bash instalar.sh --repo https://github.com/USUARIO/REPO --ref v1.0.0   # fork
 
 Fluxo real, nesta ordem:
   1. preflight: Arch Linux x86_64, usuário comum, espaço em disco, conectividade
@@ -217,8 +217,8 @@ if ((dry)); then
 fi
 
 ((local_copy)) || [[ -n $repo ]] || fail \
-    'Origem ainda não definida. Informe --repo https://github.com/SEU_USUARIO/SEU_REPO
-   ou preencha PROJECT_REPO no topo de instalar.sh antes de publicar.'
+    'Origem ainda não definida. Preencha PROJECT_REPO no topo de instalar.sh ou informe
+   --repo https://github.com/USUARIO/REPO (fork com sua própria origem).'
 
 # ── Preflight: sem escrita e sem sudo ────────────────────────────────────────
 [[ $(id -u) != 0 ]] || fail 'Execute como usuário comum. Não use sudo bash instalar.sh.'

@@ -16,12 +16,13 @@ Baixe **apenas** o `instalar.sh` e execute. Ele baixa o restante do projeto,
 confere tudo, instala as dependências e aplica os dotfiles com backup.
 
 ```bash
-curl -fLO https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/instalar.sh
+curl -fLO https://raw.githubusercontent.com/Ronilsondev/gh0stzk-hyprland/main/instalar.sh
 bash instalar.sh
 ```
 
-> Troque `SEU_USUARIO/SEU_REPO` pelo repositório donde você baixou o arquivo. É
-> essa URL que o próprio `instalar.sh` passa a usar para obter o projeto.
+> A URL do projeto fica em `PROJECT_REPO`, no topo do `instalar.sh` — é ela que
+> o instalador usa para obter o restante dos arquivos. Se você fizer um fork,
+> aponte essa constante para o seu repositório (ou use `--repo`).
 
 O instalador mostra um resumo, pede **uma única confirmação** e só então pede a
 senha do `sudo` para as operações administrativas. Ele **atualiza todo o
@@ -31,8 +32,8 @@ parcial. Nada da sua sessão é reiniciado ou encerrado.
 Se preferir clonar (também funciona):
 
 ```bash
-git clone https://github.com/SEU_USUARIO/SEU_REPO
-cd SEU_REPO && bash instalar.sh
+git clone https://github.com/Ronilsondev/gh0stzk-hyprland
+cd gh0stzk-hyprland && bash instalar.sh
 ```
 
 ## Opções
