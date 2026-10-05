@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""Inicia a configuração isolada sem alterar o gerenciador de login."""
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[1]
+try:
+    version = subprocess.check_output(['Hyprland', '--version'], text=True)
+    match = re.search(r'\b(0)\.(\d+)\.', version)
+    if not match or int(match[2]) < 56:
+        raise RuntimeError('Esta adaptação exige Hyprland 0.56 ou posterior; confira APIs antes de atualizar.')
+    if os.environ.get('WAYLAND_DISPLAY') or os.environ.get('DISPLAY'):
+        raise RuntimeError('Inicie pelo login gráfico ou TTY fora da sessão atual.')
+    os.environ['GH0STZK_ROOT'] = str(root)
+    os.environ['XDG_CURRENT_DESKTOP'] = 'Hyprland'
+    state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'gh0stzk-hyprland'
+    if not (state / 'current').exists():
+        subprocess.run([str(root / 'bin/gh0stzk'), 'prepare', 'emilia'], check=True)
+    subprocess.run(['Hyprland', '--verify-config', '--config', str(root / 'config/hyprland.lua')], check=True)
+    os.execvp('start-hyprland', ['start-hyprland', '--', '--config', str(root / 'config/hyprland.lua')])
+except (OSError, RuntimeError, subprocess.CalledProcessError) as e:
+    print('Erro ao iniciar: ' + str(e), file=sys.stderr)
+    sys.exit(1)

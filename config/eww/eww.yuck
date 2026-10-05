@@ -1,0 +1,57 @@
+;; Estrutura e estilos derivados dos widgets de gh0stzk; backend Wayland reescrito.
+(defpoll sys :interval "10s" :initial "{}" "@CTL@ widget-data system")
+(defpoll musicdata :interval "2s" :initial "{}" "@CTL@ widget-data music")
+(defwidget launchermenu []
+  (box :class "launchermenu" :orientation "v" :space-evenly false :spacing 7
+    (button :halign "end" :class "min" :onclick "@CTL@ widget launchermenu" "󰅙")
+    (box :class "usercard" :spacing 15 :space-evenly false
+      (box :class "face" :style "background-image: url('@ROOT@/assets/menu/profile.png');")
+      (box :orientation "v" :space-evenly false :valign "center"
+        (label :class "user-host" :text {sys.user ?: ""})
+        (label :class "host" :text {sys.host ?: ""})
+        (label :class "uptime" :text {sys.uptime ?: ""}))
+      (box :orientation "v"
+        (button :class "btn-info" :onclick "@CTL@ lock" "󱅞")
+        (button :class "btn-info" :onclick "@CTL@ power sair" "󰍃")))
+    (box :spacing 7
+      (box :class "pacman" :orientation "v"
+        (label :class "pacman-icon" :text "󰮯")
+        (button :class "pacman-updates" :onclick "@CTL@ updates" "Atualizações"))
+      (box :class "fetch" :spacing 8
+        (label :class "arch-icon" :text "󰣇")
+        (box :orientation "v" :space-evenly false
+          (label :text {sys.os ?: "Linux"})
+          (label :text {sys.packages ?: ""})
+          (label :text "Hyprland · Wayland"))))
+    (box :class "weatherboxfull" :orientation "v"
+      (label :class "weathercity" :text {sys.weather ?: "Clima: configure weather_file"}))
+    (box :class "system" :spacing 8
+      (circular-progress :class "cpu" :value {EWW_CPU.avg} :thickness 6 (label :class "icon" :text ""))
+      (circular-progress :class "ram" :value {EWW_RAM.used_mem_perc} :thickness 6 (label :class "icon" :text ""))
+      (circular-progress :class "disk" :value {EWW_DISK["/"].used_perc} :thickness 6 (label :class "icon" :text "")))
+    (box :class "tools-main" :spacing 12
+      (button :class "wifi-btn" :tooltip "Rede" :onclick "@CTL@ network" "")
+      (button :class "bluetooth-btn" :tooltip "Bluetooth" :onclick "@CTL@ bluetooth" "")
+      (button :class "btn-info" :tooltip "Volume" :onclick "@CTL@ app mixer" "")
+      (button :class "btn-info" :tooltip "Tema" :onclick "@CTL@ theme" "󰔉")
+      (button :class "btn-info" :tooltip "Energia" :onclick "@CTL@ power" ""))))
+(defwidget player []
+  (box :class "player" :space-evenly false
+    (box :class "player-art" :style "background-image: url('${musicdata.art ?: '@ROOT@/assets/menu/fallback.webp'}');"
+      (box :class "player-info" :orientation "v" :spacing 10
+        (label :class "player-title" :limit-width 30 :wrap true :text {musicdata.title ?: "Sem reprodução"})
+        (label :class "player-artist" :limit-width 35 :text {musicdata.artist ?: ""})
+        (label :class "player-time" :text {musicdata.status ?: ""})))
+    (box :class "player-controls" :orientation "v" :spacing 20
+      (button :class "min" :onclick "@CTL@ widget music" "󰅙")
+      (button :class "player-previous" :onclick "@CTL@ media previous" "󰒮")
+      (button :class "player-toggle" :onclick "@CTL@ media play-pause" "󰐊")
+      (button :class "player-next" :onclick "@CTL@ media next" "󰒭"))))
+(defwindow launchermenu
+  :geometry (geometry :x "80px" :y "0px" :anchor "left center")
+  :stacking "overlay" :exclusive false :focusable "ondemand" :namespace "gh0stzk-widgets"
+  (launchermenu))
+(defwindow music
+  :geometry (geometry :y "7%" :anchor "bottom center")
+  :stacking "overlay" :exclusive false :focusable "ondemand" :namespace "gh0stzk-widgets"
+  (player))

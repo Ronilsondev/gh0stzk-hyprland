@@ -1,0 +1,32 @@
+# Estado privado e artefatos locais
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.agents/
+.codex/
+.aws/
+backups/
+.cache/
+.local/
+.venv/
+
+# Saída de ferramentas de ensaio
+*.egg-info/
+
+# Referência de desenvolvimento (328 MB). Todo recurso necessário está
+# vendorizado em themes/ e assets/ com hash em resources.json, e o commit
+# original fica preservado em UPSTREAM.json e CREDITS.md.
+/upstream/
+
+# Fontes sem licença de redistribuição individual incluída: não publicar e não
+# instalar. A única exceção é MapleMono-NF, que traz a própria licença.
+# install.py aplica exatamente a mesma regra, então uma instalação nova nunca
+# depende destes arquivos.
+/assets/fonts/*
+!/assets/fonts/MapleMono-NF/

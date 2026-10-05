@@ -1,0 +1,8 @@
+@import "colors.scss";
+* { all: unset; font-family: "JetBrainsMono Nerd Font"; }
+@import "profilecard.scss";
+@import "player.scss";
+@import "cheatsheet.scss";
+button { padding: 4px; }
+button:hover { color: $blue; }
+.player-art { min-width: 350px; min-height: 220px; background-size: cover; }

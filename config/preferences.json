@@ -1,0 +1,13 @@
+{
+  "terminal": ["kitty"],
+  "files": ["thunar"],
+  "browser": ["firefox"],
+  "mixer": ["pavucontrol"],
+  "launcher_style": "style_1",
+  "widgets": true,
+  "clipboard": true,
+  "polkit": "auto",
+  "gtk_environment": false,
+  "wallpaper_directory": "",
+  "weather_file": ""
+}

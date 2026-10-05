@@ -1,0 +1,138 @@
+{
+  "static": [
+    "Sintaxe Python",
+    "JSON",
+    "Permissões de bit/gh0stzk, gh0stzk-session e instalar.sh",
+    "ShellCheck sem avisos: 1 scripts",
+    "Caminhos pessoais e comandos X11 migrados",
+    "Sintaxe shell (bash -n): 1 scripts, incluindo instalar.sh",
+    "instalar.sh: origem centralizada, atualização total e download de um commit",
+    "Upstream intacto, commit/conjunto de temas/hashes de wallpapers e prévias",
+    "Sintaxe Lua (luac) de config/*.lua: NÃO prova compatibilidade com Hyprland"
+  ],
+  "themes": {
+    "aline": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "andrea": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "brenda": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "cristina": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "cynthia": {
+      "static": "passou",
+      "panels_per_monitor": 2,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "daniela": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "emilia": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "h4ck3r": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "isabel": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "jan": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "karla": {
+      "static": "passou",
+      "panels_per_monitor": 3,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "marisol": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "melissa": {
+      "static": "passou",
+      "panels_per_monitor": 2,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "pamela": {
+      "static": "passou",
+      "panels_per_monitor": 6,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "silvia": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "varinka": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "yael": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    },
+    "z0mbi3": {
+      "static": "passou",
+      "panels_per_monitor": 1,
+      "hyprland": "não executado: Hyprland ausente",
+      "visual": "não testado"
+    }
+  },
+  "skipped": [
+    "rofi: binário ausente; parser nativo/teste funcional não executado",
+    "waybar: binário ausente; parser nativo/teste funcional não executado",
+    "dunst: binário ausente; parser nativo/teste funcional não executado",
+    "eww: binário ausente; parser nativo/teste funcional não executado",
+    "hyprlock: binário ausente; parser nativo/teste funcional não executado",
+    "hypridle: binário ausente; parser nativo/teste funcional não executado",
+    "Hyprland: binário ausente; parser nativo/teste funcional não executado"
+  ],
+  "graphical_session_tested": false,
+  "hyprland_version": "ausente",
+  "caveats": [
+    "luac -p valida apenas sintaxe Lua; a compatibilidade com o Hyprland exige o parser do próprio Hyprland (Hyprland --verify-config), executado acima.",
+    "Validação estática não abre sessão gráfica: camada, DRM/GL, áudio, portais, captura, bloqueio e inatividade continuam sem prova."
+  ]
+}

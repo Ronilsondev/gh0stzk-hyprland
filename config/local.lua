@@ -1,0 +1,8 @@
+-- Arquivo local: trocar tema nunca modifica este arquivo.
+-- Teclado brasileiro: hl.config({input = {kb_layout = 'br'}})
+-- Vários layouts: hl.config({input = {kb_layout = 'br,us'}})
+-- Consulte `hyprctl monitors all` para obter nomes reais.
+-- hl.monitor({output = 'desc:SUA DESCRIÇÃO', mode = 'preferred', position = 'auto', scale = 1.25})
+-- `reserved_area` é a margem reservada para as barras. Ao definir uma regra
+-- específica, copie os valores do current/theme.lua ou escolha margens locais.
+-- Reduzir efeitos em VM: hl.config({animations = {enabled = false}, decoration = {blur = {enabled = false}}})
