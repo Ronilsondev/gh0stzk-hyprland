@@ -19,7 +19,8 @@ UPSTREAM_REPO='https://github.com/gh0stzk/dotfiles'
 MIN_FREE_KIB=2097152          # 2 GiB, além do espaço que o pacman calcula
 REPO_PATTERN='^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
 
-repo=$PROJECT_REPO ref=$PROJECT_REF dry=0 yes=0 origin_note='fixado no topo de instalar.sh'
+repo=$PROJECT_REPO ref=$PROJECT_REF dry=0 yes=0 from_option=0
+origin_note='fixada em PROJECT_REPO, no topo de instalar.sh'
 options=()
 
 usage() {
@@ -120,7 +121,7 @@ while (($#)); do
         --repo|--ref|--optional|--with-eww)
             (($# >= 2)) && [[ -n $2 && $2 != --* ]] || fail "Falta valor para $1"
             case "$1" in
-                --repo) repo=$2 ;;
+                --repo) repo=$2 from_option=1 ;;
                 --ref) ref=$2 ;;
                 *) options+=("$1" "$2") ;;
             esac
@@ -140,9 +141,11 @@ local_copy=0
    && -f $root/config/hyprland.lua && -f $root/resources.json ]] && local_copy=1
 
 # ── Origem e referência: único ponto de decisão ─────────────────────────────
-if [[ -n $repo ]]; then
+if ((from_option)); then
     repo=$(validate_repo "$repo")
     origin_note='informada por --repo'
+elif [[ -n $repo ]]; then
+    repo=$(validate_repo "$repo")
 elif ((local_copy)); then
     detected=$(discover_remote "$root")
     if [[ -n $detected ]]; then
