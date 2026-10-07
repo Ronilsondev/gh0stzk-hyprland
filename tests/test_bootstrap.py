@@ -89,8 +89,10 @@ if name == 'git':
         args = [os.environ['MOCK_REPO'] if x.startswith('https://github.com/') else x for x in args]
         args = ['-c', 'protocol.file.allow=always', *[x.replace('protocol.file.allow=never', 'protocol.file.allow=always') for x in args]]
     sys.exit(subprocess.call([os.environ['REAL_GIT'], *args]))
+if name == 'makepkg': sys.exit(1 if fail == 'makepkg' else 99)
 if name == 'pacman':
     if '-Q' in args: sys.exit(1)
+    if fail == 'makepkg' and args == ['-Si', 'eww']: sys.exit(1)
     sys.exit(1 if fail == 'pacman' and '-Syu' in args else 0)
 if name == 'systemctl':
     if 'is-active' in args or 'is-enabled' in args: sys.exit(1)
@@ -105,7 +107,7 @@ sys.exit(0)
 ''')
         mock.chmod(0o755)
         commands = set(json.loads((ROOT / 'packages.json').read_text())['required_commands'])
-        for name in commands | {'sudo', 'pacman', 'systemctl', 'curl', 'git', 'df', 'id', 'uname'}:
+        for name in commands | {'sudo', 'pacman', 'systemctl', 'curl', 'git', 'df', 'id', 'uname', 'makepkg'}:
             (self.bin / name).symlink_to(mock)
 
     def tearDown(self):
@@ -238,6 +240,21 @@ sys.exit(0)
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.home / '.local').exists())
         self.assertFalse(any(c[0] == 'Hyprland' for c in self.calls()))
+
+    def test_makepkg_failure_stops_before_validation_and_apply(self):
+        (self.bin / 'eww').unlink()
+        # Hide any host Eww as well; retain only mocks and the Python interpreter.
+        (self.bin / 'python3').symlink_to(sys.executable)
+        for binary in ('dirname', 'awk', 'mktemp'):
+            (self.bin / binary).symlink_to(shutil.which(binary))
+        self.env['PATH'] = str(self.bin)
+        result = self.execute('--yes', fail='makepkg')
+        self.assertNotEqual(result.returncode, 0, result.stderr)
+        self.assertIn(['makepkg', '--cleanbuild'], self.calls())
+        self.assertFalse((self.home / '.local').exists())
+        self.assertFalse(any(c[0] in ('Hyprland', 'fc-cache') for c in self.calls()))
+        self.assertFalse(any(c[:3] == ['sudo', 'pacman', '-U'] for c in self.calls()))
+        self.assertEqual(list(self.downloads.iterdir()), [])
 
     def test_rejected_hyprland_stops_before_apply(self):
         result = self.execute('--yes', fail='hyprland')
@@ -462,6 +479,48 @@ class PolicyTests(unittest.TestCase):
         subprocess.run(['bash', '-n', str(ROOT / 'instalar.sh')], check=True)
         for binary in sorted((ROOT / 'bin').glob('gh0stzk*')) + [ROOT / 'instalar.sh']:
             self.assertTrue(os.access(binary, os.X_OK), str(binary))
+
+
+class EwwFallbackTests(unittest.TestCase):
+    def fallback(self, failure=False):
+        calls = []
+
+        def run(args, **kwargs):
+            calls.append([str(arg) for arg in args])
+            if args[0] == 'makepkg':
+                self.assertEqual(args, ['makepkg', '--cleanbuild'])
+                recipe = Path(kwargs['cwd']) / 'PKGBUILD'
+                self.assertEqual(recipe.read_bytes(), (ROOT / 'tools/eww/PKGBUILD').read_bytes())
+                if failure:
+                    raise subprocess.CalledProcessError(1, args)
+                (recipe.parent / 'eww-0.6.0-2-x86_64.pkg.tar.zst').touch()
+                (recipe.parent / 'eww-0.6.0-2-x86_64.pkg.tar.zst.sig').touch()
+
+        def which(binary):
+            return None if binary == 'eww' else '/mock/' + binary
+
+        with patch.object(bootstrap.os, 'getuid', return_value=1000), \
+                patch.object(bootstrap.shutil, 'which', side_effect=which), \
+                patch.object(bootstrap.subprocess, 'run', return_value=subprocess.CompletedProcess([], 1)), \
+                patch.object(bootstrap, 'output', return_value='NEEDED libgtk-layer-shell.so.0'), \
+                patch.object(bootstrap, 'run', side_effect=run), \
+                contextlib.redirect_stdout(io.StringIO()):
+            if failure:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    bootstrap.install_eww()
+            else:
+                bootstrap.install_eww()
+        return calls
+
+    def test_default_fallback_builds_local_recipe_then_installs_only_package(self):
+        calls = self.fallback()
+        self.assertEqual(calls[0], ['makepkg', '--cleanbuild'])
+        self.assertEqual(calls[1][:4], ['sudo', 'pacman', '-U', '--'])
+        self.assertTrue(calls[1][4].endswith('eww-0.6.0-2-x86_64.pkg.tar.zst'))
+        self.assertEqual(calls[2], ['eww', '--version'])
+
+    def test_failed_makepkg_does_not_install_or_continue(self):
+        self.assertEqual(self.fallback(failure=True), [['makepkg', '--cleanbuild']])
 
 
 if __name__ == '__main__':

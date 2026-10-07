@@ -131,7 +131,7 @@ def install_eww(package=None):
         if subprocess.run(['pacman', '-Si', 'eww'], capture_output=True).returncode == 0:
             run(['sudo', 'pacman', '-Syu', '--needed', '--', 'eww'])
         else:
-            print('Compilando Eww Wayland v0.6.0 como usuário comum (receita local, fonte MIT fixada).')
+            print('Compilando Eww Wayland v0.6.0 como usuário comum (fonte MIT fixada; time 0.3 corrigido no prepare; cache Cargo isolado).')
             with tempfile.TemporaryDirectory(prefix='gh0stzk-eww-') as temp:
                 shutil.copy2(ROOT / 'tools/eww/PKGBUILD', Path(temp) / 'PKGBUILD')
                 run(['makepkg', '--cleanbuild'], cwd=temp)

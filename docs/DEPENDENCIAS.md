@@ -34,6 +34,26 @@ Se não estiver nos repositórios sincronizados, compila a receita local
 (MIT), arquivo fonte com SHA-256 e Cargo.lock. Só `pacman -U` usa sudo. Não
 instala helper nem executa uma receita AUR obtida dinamicamente.
 `--with-eww ARQUIVO` continua aceitando um pacote local já compilado.
+O lock upstream contém `time 0.1.45` (API legada separada) e `time 0.3.34`.
+A segunda versão causa `E0282: type annotations needed for Box<_>` com Rust
+atual. A receita corrige **a linha 0.3** em `prepare()`, após a extração:
+`cargo update -p time@0.3.34 --precise 0.3.36`. A seleção inclui a versão para
+não confundir as duas dependências; `time 0.1.45` não é migrado. Versões 0.3 já
+compatíveis não são rebaixadas. O parser TOML (`python3 -I`, sem imports das
+fontes) detecta lock ausente/malformado e resoluções incompatíveis, valida o
+resultado antes de `cargo fetch --locked` e novamente antes do build `--frozen`.
+Falha da atualização ou validação cancela a compilação com erro explícito.
+
+A correção vive na receita rastreada: `makepkg --cleanbuild` reextrai as fontes
+mas reaplica `prepare()`. Editar um lock extraído antes da limpeza não resolve.
+As duas fases usam `CARGO_HOME` privado em `$srcdir/.cargo-home`; o cache global
+do usuário não é modificado. Cargo calcula os checksums das crates atualizadas;
+o SHA-256 do arquivo-fonte original e a instalação do `LICENSE` MIT permanecem.
+A fonte não tem assinatura declarada nesta receita; nenhuma verificação de
+checksum/assinatura do makepkg ou pacman é desabilitada, nem `SigLevel` alterado.
+Os testes simulam limpeza, update/fetch/build e falhas; não comprovam compilação
+nativa. Eww permanece obrigatório, sem substituição por Rofi.
+
 Falhas interrompem a instalação. A aceitação de Yuck/SCSS pelo Eww instalado
 é verificada ao iniciar o daemon e listar os widgets; a aparência exige VM.
 

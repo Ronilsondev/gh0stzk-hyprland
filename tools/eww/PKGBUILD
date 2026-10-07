@@ -1,24 +1,86 @@
 # MIT upstream; local recipe, no third-party AUR scripts. Never run makepkg as root.
 pkgname=eww
 pkgver=0.6.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Eww widgets, Wayland build for gh0stzk'
 arch=('x86_64')
 url='https://github.com/elkowar/eww'
 license=('MIT')
 options=('!debug')
 depends=('gtk3' 'gtk-layer-shell' 'libdbusmenu-gtk3' 'librsvg')
-makedepends=('rust')
+makedepends=('rust' 'python')
 source=("eww-$pkgver.tar.gz::https://codeload.github.com/elkowar/eww/tar.gz/refs/tags/v$pkgver")
 sha256sums=('cef361946946c566b79f8ddc6208d1a3f16b4ff9961439a3f86935e1cfa174a1')
+
+_eww_cargo_home() {
+    export CARGO_HOME="$srcdir/.cargo-home"
+    mkdir -p "$CARGO_HOME"
+}
+
+_eww_time_lock() {
+    # Isolated Python cannot import modules planted in the extracted sources.
+    python3 -I - "$PWD/Cargo.lock" "$1" <<'PY'
+import re
+import sys
+import tomllib
+
+path, mode = sys.argv[1:]
+try:
+    with open(path, 'rb') as stream:
+        lock = tomllib.load(stream)
+    packages = lock.get('package')
+    if not isinstance(packages, list) or any(not isinstance(p, dict) for p in packages):
+        raise ValueError('lista de pacotes inválida')
+    versions = []
+    for package in packages:
+        if package.get('name') != 'time':
+            continue
+        version = package.get('version')
+        if not isinstance(version, str) or not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version):
+            raise ValueError(f'versão time inválida: {version!r}')
+        number = tuple(map(int, version.split('.')))
+        # Upstream also needs time 0.1.45; it is a separate, unaffected API line.
+        if number[:2] == (0, 1):
+            continue
+        if number[:2] != (0, 3):
+            raise ValueError(f'linha time inesperada: {version}; esperada 0.3.x')
+        versions.append((version, number))
+    if not versions:
+        raise ValueError('dependência time 0.3.x ausente')
+    old = sorted({version for version, number in versions if number < (0, 3, 36)})
+    if mode == 'check' and old:
+        raise ValueError('time ' + ', '.join(old) + ' incompatível com Rust atual; exige time 0.3 >= 0.3.36; execute prepare()')
+    if mode == 'outdated':
+        print('\n'.join(old))
+except (OSError, ValueError) as exc:
+    print(f'Erro Eww: {path}: {exc}', file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+prepare() {
+    cd "eww-$pkgver" || return 1
+    _eww_cargo_home || return 1
+    local outdated version
+    outdated=$(_eww_time_lock outdated) || return 1
+    # Runs after every clean extraction, never against Cargo's global cache.
+    for version in $outdated; do
+        if ! cargo update -p "time@$version" --precise 0.3.36; then
+            printf 'Erro Eww: não foi possível atualizar time@%s para 0.3.36; compilação cancelada.\n' "$version" >&2
+            return 1
+        fi
+    done
+    _eww_time_lock check || return 1
+    cargo fetch --locked || { printf 'Erro Eww: cargo fetch --locked falhou; compilação cancelada.\n' >&2; return 1; }
+}
+
 build() {
-    cd "eww-$pkgver"
+    cd "eww-$pkgver" || return 1
+    _eww_cargo_home || return 1
+    _eww_time_lock check || return 1
     cargo build --frozen --release --no-default-features --features wayland
 }
-prepare() {
-    cd "eww-$pkgver"
-    cargo fetch --locked
-}
+
 package() {
     cd "eww-$pkgver"
     install -Dm755 target/release/eww "$pkgdir/usr/bin/eww"

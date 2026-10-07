@@ -54,6 +54,45 @@ promete reproduzir o CSS GTK 3 original. Essas limitações não são escondidas
 por uma mensagem de “aparência completa”. Falhas de dependências obrigatórias
 interrompem o fluxo.
 
+## Retomar após falha de compilação do Eww
+
+O erro `E0282: type annotations needed for Box<_>` em `time 0.3.34` é corrigido
+pela receita local no `prepare()`, depois da extração e antes do build. A linha
+`time 0.3` passa a exigir pelo menos `0.3.36`; a dependência legada `time 0.1.45`
+é distinta e permanece. A correção sobrevive a `makepkg --cleanbuild`, preserva
+SHA-256/licença MIT e usa cache Cargo privado. Veja [detalhes](docs/DEPENDENCIAS.md#eww).
+
+Para retomar **uma revisão específica**, use o SHA completo publicado da
+correção no lugar do marcador abaixo, tanto na URL quanto em `--ref`:
+
+```bash
+ref=SHA_COMPLETO_PUBLICADO
+[[ $ref =~ ^[0-9a-f]{40}$ ]] || { echo 'Substitua pelo SHA publicado'; exit 1; }
+dir=$(mktemp -d "$HOME/gh0stzk-installer.XXXXXXXX")
+curl --fail --show-error --location --proto '=https' --proto-redir '=https' \
+  "https://raw.githubusercontent.com/Ronilsondev/gh0stzk-hyprland/$ref/instalar.sh" \
+  -o "$dir/instalar.sh"
+bash "$dir/instalar.sh" --ref "$ref" --dry-run
+bash "$dir/instalar.sh" --ref "$ref"
+```
+
+Execute na VM Arch, **sem sudo bash**, com as mesmas opções da tentativa
+anterior. O diretório novo evita executar uma cópia antiga completa: `--ref`
+não atualiza seu checkout. O dry-run avulso continua offline, com os limites
+explicados acima; no fluxo real o restante do projeto vem do mesmo SHA.
+
+A transação de pacman anterior pode ter atualizado/instalado pacotes antes da
+falha. Repetir o fluxo usa `-Syu --needed`, não desfaz essas etapas. Nesta revisão,
+o Eww é compilado antes de aplicar os dotfiles, mas outra tentativa pode já
+ter criado backup. **Não apague nem restaure esse backup para simplesmente
+continuar.** Preferências (`local.lua`, `preferences.json`, overrides e tema
+escolhido) são preservadas. Arquivos gerenciados alterados localmente causam
+recusa explícita: guarde uma cópia e resolva apenas o arquivo indicado, sem
+reset forçado. Não existe opção `--skip-config` e não é necessário remover
+configurações ou modificar o cache global do Cargo. Restauração é uma decisão
+separada, usando o backup exato e a inspeção descrita abaixo; ela não remove
+pacotes nem desfaz serviços.
+
 ## Entrar na sessão
 
 Saia voluntariamente e selecione **Hyprland — gh0stzk** no gerenciador de login.
