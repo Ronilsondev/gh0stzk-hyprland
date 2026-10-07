@@ -5,7 +5,7 @@
 | BSPWM / `bspc` | Adaptado | Hyprland 0.56 Lua, dispatchers, regras, workspaces, `dwindle` | A árvore binária e as regras automáticas de polaridade do BSPWM não são reproduzidas. O layout pode reorganizar as divisões; não há promessa de árvore idêntica. |
 | sxhkd | Adaptado | Binds Lua nativos; teclas declaradas uma vez no compositor | O compositor recebe os atalhos; não há daemon externo. |
 | Polybar | Adaptado | Waybar, em até seis superfícies independentes por tema, offsets relativos por saída, escalas e hotplug | CSS não transpõe todas as métricas de fonte/padding do Polybar. Substituições de backend para workspace/rede/áudio são próprias do Wayland. |
-| Eww | Parcialmente mantido | Válvula opcional Wayland para cartões de perfil e player; GTK layer-shell, namespace isolado, estados consultados pelo controlador | Não usa barras Eww para Andrea/z0mbi3; seus assets e composição foram transplantados a Waybar. Exige build Wayland e não passou por parser nativo aqui. Os comandos/scripts X11 dos widgets originais foram removidos. |
+| Eww | Parcialmente mantido | Componente obrigatório Wayland para cartões de perfil, player e guia de atalhos; GTK layer-shell, namespace isolado, estados consultados pelo controlador | Não usa barras Eww para Andrea/z0mbi3; seus assets e composição foram transplantados a Waybar. Exige build Wayland e não passou por parser nativo aqui. Os comandos/scripts X11 dos widgets originais foram removidos. |
 | Picom | Substituído | Decoração/renderizador compositor: raio, borda, sombra, blur, animações | Fade e animações customizadas do Picom não têm equivalência exata; `P_FADE` não é transposto. Blur e sombras podem custar desempenho ou não ficar disponíveis no backend/GPU. |
 | wallpaper X11 | Substituído | Swaybg, imagem estática selecionada do tema, tela preenchida em cada saída | Não implementados vídeo, GIF, engine animada, slideshow a cada 15 min nem imagem distinta por monitor. Hyprpaper foi evitado: API muda com versões e há uma alternativa madura para a tarefa estática. |
 | i3lock-color | Substituído | Hyprlock, imagem, fonte e cores de entrada/relógio oriundas do tema | Não transpõe indicadores/efeitos exclusivos do i3lock-color. |
@@ -34,8 +34,8 @@
 Rofi 2.x tem backend oficial Wayland; Polybar tem como alvo BSPWM/X11 e é
 substituído por Waybar; Dunst suporta layer-shell Wayland e não é forçado em
 XWayland. Eww suporta layer-shell, com opções de stacking/namespace/exclusividade
-próprias do Wayland. A compatibilidade compilada de Eww permanece opt-in porque
-um pacote genérico AUR pode ser construído sem backend Wayland.
+próprias do Wayland. Eww é obrigatório; a ligação com gtk-layer-shell é verificada. Um pacote
+compilado apenas para X11 é recusado pelo instalador.
 
 `xdg-desktop-portal-hyprland` implementa interfaces usadas por picker/captura e
 screen share com PipeWire; `xdg-desktop-portal-gtk` implementa fallback de file

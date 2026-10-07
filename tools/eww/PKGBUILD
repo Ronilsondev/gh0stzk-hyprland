@@ -1,0 +1,26 @@
+# MIT upstream; local recipe, no third-party AUR scripts. Never run makepkg as root.
+pkgname=eww
+pkgver=0.6.0
+pkgrel=1
+pkgdesc='Eww widgets, Wayland build for gh0stzk'
+arch=('x86_64')
+url='https://github.com/elkowar/eww'
+license=('MIT')
+options=('!debug')
+depends=('gtk3' 'gtk-layer-shell' 'libdbusmenu-gtk3' 'librsvg')
+makedepends=('rust')
+source=("eww-$pkgver.tar.gz::https://codeload.github.com/elkowar/eww/tar.gz/refs/tags/v$pkgver")
+sha256sums=('cef361946946c566b79f8ddc6208d1a3f16b4ff9961439a3f86935e1cfa174a1')
+build() {
+    cd "eww-$pkgver"
+    cargo build --frozen --release --no-default-features --features wayland
+}
+prepare() {
+    cd "eww-$pkgver"
+    cargo fetch --locked
+}
+package() {
+    cd "eww-$pkgver"
+    install -Dm755 target/release/eww "$pkgdir/usr/bin/eww"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/eww/LICENSE"
+}

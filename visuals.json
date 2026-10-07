@@ -1,0 +1,97 @@
+{
+  "repository": "https://github.com/gh0stzk/pkgs",
+  "revision": "b8a1a288c6b8b4a061ac6f5a5194221a871b96ca",
+  "license_note": "GPL3 declarado em .PKGINFO e LICENSE do repositório; não equivale a auditoria individual de todos os ícones derivados. Arquivos são baixados, não redistribuídos neste projeto.",
+  "archives": [
+    {
+      "file": "gh0stzk-cursor-qogirr-1.0-1-any.pkg.tar.zst",
+      "sha256": "e75ccb3ca87a2d4d1e3acff824b58f945b01fb78e506df9af17fd57dc753d062",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-cursor-qogirr-1.0-1-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-gtk-themes-1.0-1-any.pkg.tar.zst",
+      "sha256": "98c8192717126744a5b7c025ae01d0afc3a493460a938adb7123650db38f7574",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-gtk-themes-1.0-1-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-beautyline-1.0-0-any.pkg.tar.zst",
+      "sha256": "220f64cb5c4038194dcd5c96a67918aa55336de546bec2640ca80aee2de8617d",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-beautyline-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-catppuccin-mocha-1.0-0-any.pkg.tar.zst",
+      "sha256": "425439bddee4c376fb327b465a5b33c6d59d815fa8abb7b9624164bce73c94d8",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-catppuccin-mocha-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-dracula-1.0-0-any.pkg.tar.zst",
+      "sha256": "f46bd9e341727c95fe414876237ac4dee56c93622b82a60add6f4c5a7c9d28c3",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-dracula-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-glassy-1.0-0-any.pkg.tar.zst",
+      "sha256": "346367fcbd016fb26c94dca0e78334a3fa66b5d395185bae3df5da2c87723903",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-glassy-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-gruvbox-plus-dark-1.0-0-any.pkg.tar.zst",
+      "sha256": "b740604634893ded3d2536e01442b0a0051ba56ce6cbbb457637b9c3757d0e15",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-gruvbox-plus-dark-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-hack-1.0-0-any.pkg.tar.zst",
+      "sha256": "2e453a72259451b1e7bc9b8f455188501a7cc078bdb4da6e2bbb9aa686d1e5a6",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-hack-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-luv-1.0-0-any.pkg.tar.zst",
+      "sha256": "5c8b723eb0f4e47d275e3629e068893997e49571a73574ead39c1111e9092e17",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-luv-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-sweet-rainbow-1.0-0-any.pkg.tar.zst",
+      "sha256": "8d8138a9691862c930084f9b4009f6dced1308af7b5a2b175a3602413d1abd7d",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-sweet-rainbow-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-tokyo-night-1.0-0-any.pkg.tar.zst",
+      "sha256": "3a2b49bee84bce10bd0207d67107d536e8e5d2528d3a768e94bceda104671c5f",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-tokyo-night-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-vimix-white-1.0-0-any.pkg.tar.zst",
+      "sha256": "9d07cafa6339c80dc8791cb6acd621704e83fb58d2f1d60025836913e65ffcfe",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-vimix-white-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-zafiro-1.0-0-any.pkg.tar.zst",
+      "sha256": "d1820e87233c30358b7ae6db1eb57fbd40a6f54f1f19c83d7e5470e5ae8175f9",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-zafiro-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-zafiro-purple-1.0-0-any.pkg.tar.zst",
+      "sha256": "1df4c8d551d4f43ab5df40de214626a72c6fba1fb7abc779c81b2b8fc18ef83d",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-zafiro-purple-1.0-0-any.pkg.tar.zst"
+    },
+    {
+      "file": "gh0stzk-icons-candy-1.0-0-any.pkg.tar.zst",
+      "sha256": "561340b68cf06148c59509679ca5333e3c60363120f667701f947fec3947a5c0",
+      "license": "GPL3",
+      "url": "https://raw.githubusercontent.com/gh0stzk/pkgs/b8a1a288c6b8b4a061ac6f5a5194221a871b96ca/x86_64/gh0stzk-icons-candy-1.0-0-any.pkg.tar.zst"
+    }
+  ]
+}

@@ -41,20 +41,21 @@ própria em `assets/fonts/MapleMono-NF/LICENSE.txt`
 Desktop, MesloLGS Nerd Font, Phosphor, Sci-Fi, FontAwesome, Bebas Neue) estão
 **fora do repositório e fora da instalação**: `.gitignore` e `install.py` aplicam
 a mesma regra. O upstream não fornece licença individual para cada uma delas, e
-`--with-fonts` é uma escolha explícita de instalação. Nenhuma fonte paga foi
+o bootstrap instala Maple por padrão (`--without-fonts` é exclusão explícita). Nenhuma fonte paga foi
 obtida de outra fonte.
 
 **Wallpapers e prévias.** Vêm do commit de origem. O upstream não fornece
 licença individual por wallpaper; o aviso do próprio repositório de origem
 aplica-se. Confira antes de redistribuir um pacote público.
 
-**Temas GTK, cursor e coleções de ícones.** **Não** estão aqui. São publicados
-pelo autor em `http://gh0stzk.github.io/pkgs/x86_64` com
-`SigLevel = Optional TrustAll`, sem chave de assinatura auditável, por isso
-esta adaptação não adiciona esse repositório. Em vez disso instala
-`papirus-icon-theme` e `adwaita-icon-theme`/`adwaita-cursors` dos repositórios
-oficiais. A lista item a item está em `packages.json` e
-[docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
+**Temas GTK, cursor e coleções de ícones.** Baixados na instalação a partir de
+[gh0stzk/pkgs](https://github.com/gh0stzk/pkgs), revisão e SHA-256 fixados em
+`visuals.json`, por HTTPS. GPL3 é a licença declarada nos `.PKGINFO`, e o
+repositório publica GPL-3.0; não há licença individual em todas as coleções.
+Isso não constitui auditoria de todos os derivados. Não são redistribuídos
+neste projeto. Extração de dados como usuário comum, sem scripts nem mudanças
+em SigLevel. Links externos/quebrados são documentados no relatório instalado.
+Veja [DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
 
 **Programas.** Hyprland, Hyprlock, Hypridle, hyprpolkitagent, Waybar, Rofi,
 Dunst, Eww, Kitty, Swaybg, Grim, Slurp, wl-clipboard, Cliphist, NetworkManager,

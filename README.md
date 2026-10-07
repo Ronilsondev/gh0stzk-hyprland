@@ -1,200 +1,132 @@
 # gh0stzk · adaptação independente para Hyprland
 
-Migração dos dotfiles de [gh0stzk](https://github.com/gh0stzk/dotfiles), commit
-`bbcd8b00e537ddad63d34a0c448e5bd539078fcb`, para **Arch Linux / Hyprland 0.56+**.
-Não é um lançamento oficial do autor original. Licença GPL-3.0, créditos em
-[CREDITS.md](CREDITS.md). A referência do commit original fica em
-[UPSTREAM.json](UPSTREAM.json).
+Adaptação dos [dotfiles de gh0stzk](https://github.com/gh0stzk/dotfiles), commit
+`bbcd8b00e537ddad63d34a0c448e5bd539078fcb`, para Arch Linux / Hyprland 0.56+.
+GPL-3.0; não é um lançamento oficial do autor. Veja [CREDITS.md](CREDITS.md).
 
-**Estado: pronto para instalar, validação gráfica ainda pendente.** Nenhuma sessão
-Hyprland foi aberta até aqui. Leia [VALIDACAO.md](docs/VALIDACAO.md) antes de
-instalar e [SESSAO.md](docs/SESSAO.md) para o ensaio em VM.
+**Fluxo de instalação corrigido; validação gráfica na VM ainda pendente.**
+Os testes automatizados não provam que a aparência foi reproduzida. O autostart
+anterior chamava `gh0stzksession`, um executável inexistente, e os recursos GTK,
+ícones e cursor referenciados não eram instalados/aplicados. O diagnóstico e
+as demais causas estão em [DIAGNOSTICO.md](docs/DIAGNOSTICO.md).
 
-## Instalação em três passos
+## Instalar ou atualizar na VM
 
-Baixe **apenas** o `instalar.sh` e execute. Ele baixa o restante do projeto,
-confere tudo, instala as dependências e aplica os dotfiles com backup.
+Repositório público: [Ronilsondev/gh0stzk-hyprland](https://github.com/Ronilsondev/gh0stzk-hyprland).
+Na VM Arch, como usuário comum, baixe somente o instalador em um diretório novo.
+Resolva `main` uma vez para um SHA completo e use a mesma revisão no download
+e no bootstrap (requer `curl`; `git` é usado aqui apenas para resolver a revisão):
 
 ```bash
-curl -fLO https://raw.githubusercontent.com/Ronilsondev/gh0stzk-hyprland/main/instalar.sh
-bash instalar.sh
+repo=https://github.com/Ronilsondev/gh0stzk-hyprland
+ref=$(git ls-remote "$repo" refs/heads/main | cut -f1)
+[[ $ref =~ ^[0-9a-f]{40}$ ]] || { echo 'Referência não encontrada'; exit 1; }
+dir=$(mktemp -d "$HOME/gh0stzk-installer.XXXXXXXX")
+cd "$dir"
+curl --fail --show-error --location --proto '=https' --proto-redir '=https' \
+  "https://raw.githubusercontent.com/Ronilsondev/gh0stzk-hyprland/$ref/instalar.sh" \
+  -o instalar.sh
+bash instalar.sh --ref "$ref" --dry-run
+bash instalar.sh --ref "$ref"
 ```
 
-> A URL do projeto fica em `PROJECT_REPO`, no topo do `instalar.sh` — é ela que
-> o instalador usa para obter o restante dos arquivos. Se você fizer um fork,
-> aponte essa constante para o seu repositório (ou use `--repo`).
+O dry-run avulso é offline e informa seus limites: não consegue conferir os
+manifests sem baixar o restante do projeto. No fluxo real, o instalador obtém
+um único commit por HTTPS. Também é possível usar uma cópia completa e executar
+`bash instalar.sh --dry-run` antes de `bash instalar.sh`; uma cópia local não
+é atualizada automaticamente por `--ref`. A instalação real é exclusiva da VM.
 
-O instalador mostra um resumo, pede **uma única confirmação** e só então pede a
-senha do `sudo` para as operações administrativas. Ele **atualiza todo o
-sistema** com `pacman -Syu --needed` antes de instalar — não existe atualização
-parcial. Nada da sua sessão é reiniciado ou encerrado.
+O fluxo faz atualização total Arch com `pacman -Syu --needed`, instala os
+componentes padrão, obtém os recursos externos fixados, valida e aplica os
+arquivos com backup, registra a sessão e gera o tema inicial. Não encerra a
+sessão atual, não substitui o gerenciador de login e não instala no ambiente
+principal durante testes deste repositório.
 
-Se preferir clonar (também funciona):
+Eww, Hyprpicker, checkupdates, GTK, ícones e cursor são parte da instalação
+padrão. Eww é compilado como usuário comum se necessário. Recursos externos
+usam HTTPS e SHA-256, sem adicionar o repositório HTTP do autor ao pacman.
+[Dependências, licenças e matriz recurso → pacote → configuração → inicialização](docs/DEPENDENCIAS.md).
 
-```bash
-git clone https://github.com/Ronilsondev/gh0stzk-hyprland
-cd gh0stzk-hyprland && bash instalar.sh
-```
+Alguns ícones originais têm links quebrados; a lista exata é salva em
+`~/.local/share/gh0stzk-hyprland-visuals/current/report.json`. Fontes foram
+normalizadas para famílias licenciadas disponíveis. GTK 4/libadwaita não
+promete reproduzir o CSS GTK 3 original. Essas limitações não são escondidas
+por uma mensagem de “aparência completa”. Falhas de dependências obrigatórias
+interrompem o fluxo.
 
-## Opções
+## Entrar na sessão
 
-```bash
-bash instalar.sh --help          # todas as opções e exemplos
-bash instalar.sh --dry-run       # mostra o plano sem baixar, instalar nem pedir senha
-```
-
-| Opção | Efeito |
-|---|---|
-| `--dry-run` | Plano completo sem alterar, baixar, atualizar ou pedir senha. Funciona mesmo sem `python3`/`git`. |
-| `--yes` | Dispensa só a confirmação inicial. Não contorna o `sudo` nem as decisões do `pacman`. |
-| `--repo HTTPS_URL` | Repositório desta adaptação (nunca o upstream do gh0stzk). |
-| `--ref REF` | Branch, tag ou commit. O modo avulso baixa **um** commit resolvido. |
-| `--optional PACOTE` | Acrescenta um opcional oficial: `blueman`, `bluez`, `bluez-utils`, `hyprpicker`, `pacman-contrib`, `uwsm`, `shellcheck`. Repetível. |
-| `--with-eww ARQUIVO` | Instala um pacote `eww` **já compilado por você**, via `sudo pacman -U`. |
-| `--without-fonts` | Não disponibiliza as fontes incluídas ao fontconfig. |
-| `--without-portals` | Preserva a preferência existente de `xdg-desktop-portal`. |
-| `--without-session` | Não registra a entrada de sessão no gerenciador de login. |
-
-## O que é instalado
-
-**Oficiais obrigatórios** — `hyprland`, `waybar`, `rofi`, `dunst`, `swaybg`,
-`hyprlock`, `hypridle`, `kitty`, `thunar`, `firefox`, `pavucontrol`, `grim`,
-`slurp`, `wl-clipboard`, `cliphist`, `brightnessctl`, `playerctl`, `pipewire`,
-`pipewire-pulse`, `wireplumber`, `xdg-desktop-portal`,
-`xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk`, `hyprpolkitagent`,
-`networkmanager`, `libnotify`, `python`, `lua`, `procps-ng`,
-`ttf-jetbrains-mono-nerd`, `ttf-inconsolata`, `ttf-terminus-nerd`,
-`papirus-icon-theme`, `webp-pixbuf-loader`, `git`, `curl`, `fontconfig`, `dbus`,
-`mesa`, `xdg-utils`, `adwaita-icon-theme`, `adwaita-cursors`.
-
-**Oficiais opcionais** — `blueman`, `bluez`, `bluez-utils`, `hyprpicker`,
-`pacman-contrib`, `uwsm`, `shellcheck`.
-
-**AUR** — apenas `eww`, e somente se você compilar o pacote e passá-lo com
-`--with-eww`. Nenhum helper AUR (`paru`, `yay`) é instalado e nada é compilado
-como root.
-
-Recursos do autor fora deste repositório — temas GTK, o cursor `Qogirr` e as
-coleções de ícones `gh0stzk-icons-*` — são publicados por ele em
-`http://gh0stzk.github.io/pkgs/x86_64` com `SigLevel = Optional TrustAll`, ou
-seja, **sem chave de assinatura auditável**. Por isso esta adaptação **não
-adiciona esse repositório** e usa `papirus-icon-theme` + `adwaita-cursors` como
-alternativas oficiais. Os nomes originais continuam nos temas, para você
-instalar de fonte auditada se quiser. A lista completa, com a origem de cada um,
-está em [DEPENDENCIAS.md](docs/DEPENDENCIAS.md) e em `packages.json`.
-
-**Aparência não é idêntica à do autor** enquanto esses recursos não forem
-instalados por você. Todo o resto — 18 temas, wallpapers, barras Waybar, Rofi,
-Dunst, Hyprlock, Hypridle, fontes, portais e entrada de sessão — funciona com
-pacotes oficiais.
-
-## Iniciar a sessão
-
-A instalação registra uma entrada **Hyprland — gh0stzk** em
-`/usr/share/wayland-sessions`, usando o wrapper do projeto. Saia da sua sessão
-**voluntariamente** e escolha essa entrada. Nada é desligado por você.
+Saia voluntariamente e selecione **Hyprland — gh0stzk** no gerenciador de login.
+A entrada genérica Hyprland continua disponível para a configuração anterior.
+Alternativamente, em TTY fora de uma sessão gráfica:
 
 ```bash
-# Alternativa por TTY, sem passar pelo gerenciador de login:
 ~/.local/bin/gh0stzk-session
 ```
 
-O wrapper exige Hyprland 0.56+ e falha de forma explícita se você o chamar
-dentro de outra sessão gráfica. O gerenciador de login instalado não é
-substituído, e a entrada nova tem arquivo administrativo registrado em
-`/var/lib/gh0stzk-hyprland/sessions`, então a restauração a remove.
-
-Atalhos principais: `Super+Enter` terminal, `Super+Espaço` aplicativos,
-`Alt+Espaço` temas, `Super+Alt+W` wallpapers, `Alt+F1` guia,
-`Super+Alt+P` energia, `Super+Ctrl+L` bloqueio.
-[Todos os atalhos](docs/ATALHOS.md).
+Emilia é o tema inicial; uma atualização mantém a seleção anterior. Barras,
+wallpaper, notificações e daemon Eww iniciam ao entrar. Menus e widgets abrem
+pelos atalhos/botões. Super+Enter abre o Kitty com a configuração do tema;
+Super+Espaço abre aplicativos; Alt+Espaço escolhe o tema.
 
 ```bash
-~/.local/bin/gh0stzk list              # temas e estado
-~/.local/bin/gh0stzk theme emilia      # troca de tema
-~/.local/bin/gh0stzk refresh           # reaplica e lê os monitores
-~/.local/bin/gh0stzk rollback          # volta à geração anterior
+~/.local/bin/gh0stzk list
+~/.local/bin/gh0stzk theme emilia
+~/.local/bin/gh0stzk widget launchermenu
+~/.local/bin/gh0stzk widget music
+~/.local/bin/gh0stzk diagnose > ~/gh0stzk-diagnostico.json
 ```
 
-Trocar tema prepara uma geração, valida os arquivos, troca um link atômico,
-recarrega o Hyprland e reinicia só os processos registrados por esta adaptação.
-Falhas detectadas recuperam a geração anterior. Isso não é uma transação
-gráfica: pode haver um breve intervalo sem barra. Registros em
-`~/.local/state/gh0stzk-hyprland/*.log`.
+[Ensaio da sessão na VM](docs/SESSAO.md) · [Atalhos](docs/ATALHOS.md).
+Para continuar a investigação, envie inicialmente apenas o JSON do diagnóstico.
 
-## Personalizar
+## Preferências e backups
 
-Edite `~/.config/gh0stzk-hyprland/local.lua` para teclado, escala, monitores e
-atalhos, e `preferences.json` para aplicativos, widgets e wallpapers.
-`Super+R` abre o editor de aparência por tema. Detalhes em
-[USO.md](docs/USO.md).
+Edite `~/.config/gh0stzk-hyprland/local.lua` e `preferences.json`. Eles são
+preservados ao atualizar, assim como overrides e wallpaper escolhido. Se
+`widgets` já estiver `false`, continua desativado até você mudar para `true`.
+GTK/GSettings usam um perfil privado da sessão; as configurações globais de
+KDE, GNOME, Kitty, shell e outros ambientes permanecem preservadas.
 
-A instalação **só cria** `local.lua` e `preferences.json` se não existirem; se
-você já os tiver, são preservados. O mesmo vale para a sua preferência de
-portais. Configurações de KDE, GNOME, BSPWM, Neovim, shell, Kitty global e
-Firefox global **não são tocadas**, e nenhum ambiente gráfico é removido.
-
-## Atualizar
-
-Rode o instalador de novo. Ele reaplica só o que mudou e faz backup antes:
-
-```bash
-bash instalar.sh            # dentro do repositório, ou o mesmo comando do passo 1
-```
-
-Instalação e atualização são repetíveis; a segunda execução normalmente não
-altera nada.
-
-## Restaurar
-
-O instalador informa o diretório do backup na aplicação. Copie **exatamente**
-esse caminho:
+Backups: `~/.local/state/gh0stzk-hyprland/backups`. Alterações suas em arquivos
+gerenciados são detectadas e recusam sobrescrita. Para restaurar arquivos,
+fora da sessão, use o caminho exato informado na instalação:
 
 ```bash
 python3 ~/.local/share/gh0stzk-hyprland/install.py --restore CAMINHO_DO_BACKUP
 python3 ~/.local/share/gh0stzk-hyprland/install.py --restore CAMINHO_DO_BACKUP --apply
 ```
 
-A primeira chamada só inspeciona. A segunda restaura **apenas** arquivos que
-continuam idênticos aos que o instalador escreveu: alterações suas ficam
-preservadas e a chamada sai com código 2. Não remove pacotes, diretórios
-inteiros, gerações de tema nem arquivos criados depois. Restaure **fora** de uma
-sessão Hyprland, e vários backups do mais recente para o mais antigo.
+Arquivos modificados posteriormente são preservados (saída 2). Pacotes,
+serviços e armazenamento externo de recursos não são removidos. Gerações de
+tema ficam disponíveis para `gh0stzk rollback --offline` no TTY.
 
-A restauração devolve arquivos. Pacotes instalados, a atualização do sistema e
-os serviços que foram habilitados **não** são revertidos.
+## Opções
 
-Ensaio totalmente isolado, sem tocar na sua conta:
+`bash instalar.sh --help` descreve o fluxo. `--yes` dispensa a confirmação
+inicial, mas não autenticação sudo ou decisões do pacman.
 
-```bash
-teste=$(mktemp -d)
-python3 install.py --home "$teste"
-python3 install.py --home "$teste" --apply --allow-missing
-backup=$(find "$teste/.local/state/gh0stzk-hyprland/backups" -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
-python3 install.py --home "$teste" --restore "$backup" --apply
-```
+| Opção | Efeito |
+|---|---|
+| `--dry-run` | Plano sem downloads, instalações ou escritas |
+| `--repo URL --ref REF` | Origem da adaptação no modo avulso; nunca o BSPWM upstream |
+| `--optional PACOTE` | Bluetooth (`blueman`, `bluez`, `bluez-utils`), `uwsm` ou `shellcheck` |
+| `--with-eww ARQUIVO` | Usa um pacote local Eww com suporte Wayland |
+| `--without-fonts` | Exclusão explícita das fontes incluídas; pode deixar a tipografia incompleta |
+| `--without-portals` | Não instala a preferência específica de portais |
+| `--without-session` | Não registra entrada no login; início pelo TTY |
 
 ## Verificar sem instalar
 
 ```bash
-bash instalar.sh --dry-run   # plano completo, offline quando é possível
-python3 tools/validate.py    # gera e valida as configurações dos 18 temas
-python3 install.py           # dry-run do aplicador de arquivos
 python3 -m unittest discover -s tests -v
+python3 tools/validate.py --report /tmp/gh0stzk-validacao.json
+bash instalar.sh --dry-run
 ```
 
-`--allow-missing` só prepara arquivos e **não** declara um desktop funcional; o
-fluxo normal nunca o usa.
+A suíte usa homes temporárias e comandos administrativos simulados.
+`install.py --allow-missing` é só preparação de arquivos; não é o instalador
+completo. Nenhum desses comandos abre uma sessão gráfica.
 
-## Documentação
-
-· [DEPENDENCIAS.md](docs/DEPENDENCIAS.md) — pacotes, versões e o que continua
-opcional
-· [VALIDACAO.md](docs/VALIDACAO.md) — o que foi verificado e o que não foi
-· [SESSAO.md](docs/SESSAO.md) — ensaio em VM Arch e sessão real
-· [TEMAS.md](docs/TEMAS.md) — os 18 temas e a composição preservada
-· [MIGRACAO.md](docs/MIGRACAO.md) — o que mudou em relação ao BSPWM original
-· [USO.md](docs/USO.md) — personalização e recuperação
-· [ATALHOS.md](docs/ATALHOS.md) — tabela de atalhos
-· [FONTES.md](docs/FONTES.md) — documentação oficial consultada
-· [PUBLICACAO.md](docs/PUBLICACAO.md) — como publicar este repositório
+[Validação e limites](docs/VALIDACAO.md) · [Temas](docs/TEMAS.md) ·
+[Migração](docs/MIGRACAO.md) · [Uso](docs/USO.md) · [Fontes técnicas](docs/FONTES.md).

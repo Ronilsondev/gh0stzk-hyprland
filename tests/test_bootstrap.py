@@ -25,7 +25,7 @@ class BootstrapTests(unittest.TestCase):
     def setUpClass(cls):
         cls.base = tempfile.TemporaryDirectory(prefix='gh bootstrap ')
         cls.repo = Path(cls.base.name) / 'repo with spaces'
-        shutil.copytree(ROOT, cls.repo, ignore=shutil.ignore_patterns('.git', '.agents', '.aws', '.codex', '__pycache__', 'upstream'))
+        shutil.copytree(ROOT, cls.repo, ignore=shutil.ignore_patterns('.git', '.claude', '.agents', '.aws', '.codex', '__pycache__', 'upstream'))
         cls.osfile = Path(cls.base.name) / 'os-release'
         cls.osfile.write_text('ID=arch\n')
         script = cls.repo / 'instalar.sh'
@@ -36,7 +36,7 @@ class BootstrapTests(unittest.TestCase):
                                   script.read_text().replace(
                                       'source /etc/os-release', 'source "' + str(cls.osfile) + '"')))
         backend = cls.repo / 'tools/bootstrap.py'
-        backend.write_text(backend.read_text().replace("Path('/etc/os-release')", 'Path(' + repr(str(cls.osfile)) + ')'))
+        backend.write_text(backend.read_text().replace("Path('/etc/os-release')", 'Path(' + repr(str(cls.osfile)) + ')').replace('    visuals.install()', '    pass  # external assets are exercised separately with fixture archives'))
         cls.git = shutil.which('git')
         for cmd in ([cls.git, 'init', '-q', '-b', 'main', str(cls.repo)],
                     [cls.git, '-C', str(cls.repo), 'add', '.'],
@@ -99,6 +99,7 @@ if name == 'Hyprland':
     if '--version' in args: print('Hyprland 0.56.2'); sys.exit(0)
     if '--help' in args: print('--verify-config'); sys.exit(0)
     sys.exit(1 if fail == 'hyprland' else 0)
+if name == 'readelf': print('NEEDED libgtk-layer-shell.so.0')
 if name == 'rofi' and '-version' in args: print('Version: 2.0.0')
 sys.exit(0)
 ''')
@@ -144,8 +145,12 @@ sys.exit(0)
         self.assertEqual(provenance['ref'], 'main')
         self.assertEqual(len(provenance['commit']), 40)
         self.assertIn('remote origin detectado', result.stdout)
+        current = self.home / '.local/state/gh0stzk-hyprland/current'
+        self.assertEqual(json.loads((current / 'selection.json').read_text())['theme'], 'emilia')
+        subprocess.run([str(self.home / '.local/bin/gh0stzk'), 'prepare', 'pamela'], env=self.env, check=True, capture_output=True)
         result = self.execute('--yes', '--without-session')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(json.loads((current / 'selection.json').read_text())['theme'], 'pamela')
         self.assertEqual(len(list(backups[0].parent.parent.glob('*/manifest.json'))), 1)
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(install.main(['--home', str(self.home), '--restore', str(backups[0].parent), '--apply']), 0)

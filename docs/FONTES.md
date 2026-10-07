@@ -34,9 +34,10 @@ inventada.
   — motivo de o instalador usar `pacman -Syu --needed` e nunca `-Sy` seguido de
   instalação.
 
-Cada nome de pacote da seção "oficiais" de `packages.json` foi conferido no
-catálogo do Arch em 05/10/2026: a lista completa, com repositório e versão, está
-em [DEPENDENCIAS.md](DEPENDENCIAS.md).
+O catálogo inicial foi consultado em 05/10/2026. A matriz atual está em
+[DEPENDENCIAS.md](DEPENDENCIAS.md); o instalador consulta os repositórios
+sincronizados do Arch e recusa falhas de pacotes obrigatórios. Nenhuma transação
+pacman desta revisão foi executada neste computador.
 
 ## wayland-sessions
 
@@ -82,3 +83,17 @@ em [DEPENDENCIAS.md](DEPENDENCIAS.md).
 - `shellcheck` não está instalado no ambiente de desenvolvimento; o
   `instalar.sh` foi analisado com o binário 0.11.0 baixado em `/tmp`, sem
   instalar nada no sistema.
+
+## Fontes da correção de integração (07/10/2026)
+
+- [Core Hyprland](https://wiki.hypr.land/configuring/core/) confirma
+  `start-hyprland -- --config` e configuração Lua explícita.
+- [GTK CSS provider 3.24](https://github.com/GNOME/gtk/blob/gtk-3-24/gtk/gtkcssprovider.c)
+  confirma a busca em XDG_DATA_DIRS e versões gtk-3.20.
+- [GSettings](https://docs.gtk.org/gio/class.Settings.html) e
+  [GTK runtime](https://docs.gtk.org/gtk3/running.html): isolamento por backend
+  keyfile/perfil e seleção de recursos.
+- [Recursos do autor](https://github.com/gh0stzk/pkgs): catálogo e arquivos
+  consultados diretamente por HTTPS; hashes/licenças em visuals.json.
+- [Eww v0.6.0](https://github.com/elkowar/eww/tree/v0.6.0): código de opções,
+  backend Wayland e MIT conferidos no arquivo fonte baixado.

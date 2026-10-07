@@ -46,9 +46,9 @@ ocultado. Não há localização pessoal, token de API nem cidade hardcoded.
 `polkit: "auto"` verifica agentes existentes antes de iniciar o serviço de usuário
 hyprpolkitagent. Use `"polkit": "external"` se sua sessão já gerencia um agente.
 `clipboard: false` desativa os watchers na próxima sessão. O histórico não é
-apagado ao trocar tema ou restaurar a instalação. `widgets: false` usa alternativas
-Rofi. `gtk_environment: true` aplica o nome GTK apenas ao gerenciador de arquivos
-iniciado pelo controlador, sem modificar preferências GTK globais.
+apagado ao trocar tema ou restaurar a instalação. `widgets: false` desativa Eww. Não há substituição por Rofi. GTK, ícones e cursores são aplicados pelo
+perfil privado da sessão gh0stzk; `gtk_environment` é uma opção legada de
+lançamento, não controla a aplicação do tema à sessão.
 
 O cliphist guarda os itens de clipboard no estado do usuário. Para limpar o
 histórico manualmente: `cliphist wipe`.
@@ -67,7 +67,7 @@ Se não conseguir abrir a sessão, prepare um tema conhecido a partir de um TTY:
 ~/.local/bin/gh0stzk rollback --offline
 ```
 
-Esse modo não testa componentes nem valida a configuração local no compositor.
+Esse modo não abre componentes; quando Hyprland está disponível, verifica a configuração local com --verify-config, sem iniciar compositor.
 O estado pode conter gerações antigas: elas são mantidas para recuperação e não
 são apagadas indiscriminadamente. Inspecione e remova manualmente apenas as que
 não são alvos de `current`/`previous`, fora da sessão.

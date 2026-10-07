@@ -9,6 +9,7 @@ __pycache__/
 *.pem
 *.key
 .agents/
+.claude/
 .codex/
 .aws/
 backups/

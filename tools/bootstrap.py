@@ -8,6 +8,8 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import visuals
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,20 +28,20 @@ def output(args):
 
 def manifest():
     data = json.loads((ROOT / 'packages.json').read_text())
-    for key, kind in [('official', list), ('official_optional', dict), ('aur_optional', dict),
+    for key, kind in [('official', list), ('official_optional', dict), ('aur_required', dict), ('aur_optional', dict),
                       ('required_commands', list), ('external_not_installed', dict)]:
         values = data.get(key)
-        if not isinstance(values, kind) or not values:
+        if not isinstance(values, kind) or (not values and key not in ('aur_optional', 'external_not_installed')):
             raise ValueError('Manifesto inválido: ' + key)
         if any(not isinstance(x, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9+_.-]*', x) for x in values):
             raise ValueError('Nome inválido em ' + key)
         if len(values) != len(set(values)):
             raise ValueError('Duplicatas em ' + key)
-    for key, description in list(data['external_not_installed'].items()) + list(data['aur_optional'].items()):
+    for key, description in list(data['external_not_installed'].items()) + list(data['aur_required'].items()):
         # Descriptions must state where the resource comes from; silence is not allowed.
         if not re.search(r'(AUR|github\.com|repositório|repo|http)', description, re.I):
             raise ValueError('Origem não declarada para ' + key + ': ' + description)
-    if set(data['official']) & (set(data['official_optional']) | set(data['aur_optional'])):
+    if set(data['official']) & (set(data['official_optional']) | set(data['aur_required'])):
         raise ValueError('Categorias sobrepostas no manifesto')
     return data
 
@@ -47,7 +49,8 @@ def manifest():
 def payload():
     required = ['install.py', 'instalar.sh', 'LICENSE', 'UPSTREAM.json', 'packages.json',
                 'bin/gh0stzk', 'bin/gh0stzk-session', 'lib/runtime.py', 'lib/render.py',
-                'config/hyprland.lua', 'tools/validate.py', 'tools/session_admin.py', 'resources.json']
+                'config/hyprland.lua', 'tools/validate.py', 'tools/session_admin.py', 'resources.json',
+                'visuals.json', 'tools/visuals.py', 'tools/eww/PKGBUILD', 'lib/session_env.py', 'lib/diagnostics.py']
     for name in required:
         if not (ROOT / name).is_file():
             raise ValueError('Cópia incompleta: ' + name)
@@ -119,6 +122,30 @@ def service_plan():
     return plan
 
 
+def install_eww(package=None):
+    if os.getuid() == 0:
+        raise ValueError('Eww deve ser compilado como usuário comum')
+    if package:
+        run(['sudo', 'pacman', '-U', '--', package])
+    elif not shutil.which('eww'):
+        if subprocess.run(['pacman', '-Si', 'eww'], capture_output=True).returncode == 0:
+            run(['sudo', 'pacman', '-Syu', '--needed', '--', 'eww'])
+        else:
+            print('Compilando Eww Wayland v0.6.0 como usuário comum (receita local, fonte MIT fixada).')
+            with tempfile.TemporaryDirectory(prefix='gh0stzk-eww-') as temp:
+                shutil.copy2(ROOT / 'tools/eww/PKGBUILD', Path(temp) / 'PKGBUILD')
+                run(['makepkg', '--cleanbuild'], cwd=temp)
+                packages = list(Path(temp).glob('eww-*.pkg.tar.*'))
+                packages = [p for p in packages if not p.name.endswith('.sig')]
+                if len(packages) != 1:
+                    raise ValueError('Compilação Eww não gerou um único pacote')
+                run(['sudo', 'pacman', '-U', '--', packages[0]])
+    run(['eww', '--version'])
+    linked = output(['readelf', '-d', shutil.which('eww') or 'eww'])
+    if 'libgtk-layer-shell.so' not in linked:
+        raise ValueError('Eww sem ligação Wayland gtk-layer-shell verificável; forneça --with-eww com build Wayland.')
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry-run', action='store_true')
@@ -138,10 +165,11 @@ def main(argv=None):
     print('Opcionais selecionados: ' + (' '.join(args.optional) or 'nenhum'))
     for name, why in data['official_optional'].items():
         print('  oficial opcional: ' + name + ' — ' + why)
-    for name, why in data['aur_optional'].items():
-        print('  AUR opcional: ' + name + ' — ' + why)
+    for name, why in data['aur_required'].items():
+        print('  Eww obrigatório: ' + name + ' — ' + why)
     for name, why in data['external_not_installed'].items():
         print('  fora deste repositório: ' + name + ' — ' + why)
+    print('Recursos externos obrigatórios: GTK, Qogirr e ícones fixados em visuals.json (download HTTPS + SHA-256).')
     print('Recursos conferidos: 18 temas, wallpapers, fontes licenciadas e assets; upstream dispensável.')
     if args.dry_run:
         print('ATENÇÃO: o fluxo real atualizará TODO o sistema: sudo pacman -Syu --needed -- ' + ' '.join(packages))
@@ -179,8 +207,8 @@ def main(argv=None):
     run(['sudo', 'pacman', '-Syu', '--needed', '--', *packages])
     # Query the synchronized repositories and ensure each requested official package exists.
     run(['pacman', '-Si', '--', *packages], stdout=subprocess.DEVNULL)
-    if args.with_eww:
-        run(['sudo', 'pacman', '-U', '--', args.with_eww])
+    install_eww(args.with_eww)
+    visuals.install()
     missing = install.dependencies()
     if missing:
         raise ValueError('Dependências obrigatórias ausentes/incompatíveis: ' + ', '.join(missing))
@@ -209,20 +237,20 @@ def main(argv=None):
     for unit, user in services:
         run((['systemctl', '--user'] if user else ['sudo', 'systemctl']) + ['enable', '--now', unit])
     print('')
-    print('Instalação concluída. Nada foi reiniciado e sua sessão continua intacta.')
+    print('Pacotes e arquivos aplicados; tema inicial gerado e aceito pelo Hyprland. Aparência gráfica ainda não verificada.')
+    print('Nada foi reiniciado e sua sessão continua intacta.')
     print('Origem: ' + args.source + ' | referência: ' + args.ref +
           ' | commit: ' + (version or 'cópia local sem commit; hash dos recursos registrado'))
     print('Backup: ~/.local/state/gh0stzk-hyprland/backups (use exatamente o diretório informado na aplicação)')
+    if args.without_session:
+        print('Entrada de login não registrada (--without-session); use o TTY abaixo.')
     print('Sessão: saia voluntariamente e escolha "Hyprland — gh0stzk" no gerenciador de login;')
     print('ou, em um TTY, execute: ~/.local/bin/gh0stzk-session')
     print('Restauração: python3 ~/.local/share/gh0stzk-hyprland/install.py --restore CAMINHO_DO_BACKUP --apply')
     print('A restauração devolve arquivos; pacotes, atualização do sistema e serviços habilitados permanecem.')
-    if shutil.which('eww'):
-        print('Eww detectado; os widgets usam Wayland. Se não abrirem, confira preferências["widgets"].')
-    else:
-        print('Eww ausente (AUR opcional): perfil e controles de música usam as alternativas Rofi.')
-    print('Ainda pendente de prova: sessão gráfica real. Temas GTK, ícones e cursor originais')
-    print('permanecem opcionais e não são instalados por este fluxo.')
+    print('Eww instalado como dependência padrão. Widgets podem ser desativados explicitamente nas preferências.')
+    print('Recursos visuais: veja ~/.local/share/gh0stzk-hyprland-visuals/current/report.json para limitações do original.')
+    print('Diagnóstico após entrar: ~/.local/bin/gh0stzk diagnose')
     return 0
 
 

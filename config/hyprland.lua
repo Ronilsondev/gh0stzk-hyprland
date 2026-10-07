@@ -1,5 +1,5 @@
 -- Adaptação independente gh0stzk → Hyprland 0.56; GPL-3.0.
-local config_home = os.getenv('XDG_CONFIG_HOME') or (os.getenv('HOME') .. '/.config')
+local config_home = os.getenv('GH0STZK_CONFIG_HOME') or os.getenv('XDG_CONFIG_HOME') or (os.getenv('HOME') .. '/.config')
 local state_home = os.getenv('XDG_STATE_HOME') or (os.getenv('HOME') .. '/.local/state')
 local data_home = os.getenv('XDG_DATA_HOME') or (os.getenv('HOME') .. '/.local/share')
 local project = os.getenv('GH0STZK_ROOT') or (data_home .. '/gh0stzk-hyprland')
@@ -81,4 +81,4 @@ hl.window_rule({match = {class = '(org.pulseaudio.pavucontrol|pavucontrol|nm-con
 local localfile = config_home .. '/gh0stzk-hyprland/local.lua'
 local f = io.open(localfile)
 if f then f:close(); dofile(localfile) end
-hl.on('hyprland.start', function() hl.exec_cmd(ctl .. 'session') end)
+hl.on('hyprland.start', function() hl.exec_cmd(ctl .. ' session >> ' .. quote(state_home .. '/gh0stzk-hyprland/session.log') .. ' 2>&1') end)

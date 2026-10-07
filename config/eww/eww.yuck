@@ -55,3 +55,19 @@
   :geometry (geometry :y "7%" :anchor "bottom center")
   :stacking "overlay" :exclusive false :focusable "ondemand" :namespace "gh0stzk-widgets"
   (player))
+
+;; Guia Wayland com os estilos do cheatsheet original e atalhos desta adaptação.
+(defwidget cheatsheet []
+  (box :class "cheatsheet" :orientation "v" :space-evenly false
+    (label :class "title" :text "GH0STZK · HYPRLAND · ATALHOS")
+    (button :class "title-info" :onclick "@CTL@ widget csheet" "Alt + F1 · fechar")
+    (scroll :hscroll false :vscroll true
+      (box :class "content" :orientation "v" :space-evenly false :spacing 8
+        (for binding in shortcuts
+          (box :space-evenly true :spacing 20
+            (label :class "keys-alt" :xalign 0 :text {binding.key})
+            (label :class "keys" :xalign 0 :wrap true :text {binding.action})))))))
+(defwindow csheet
+  :geometry (geometry :width "80%" :height "75%" :anchor "center")
+  :stacking "overlay" :exclusive false :focusable "ondemand" :namespace "gh0stzk-widgets"
+  (cheatsheet))

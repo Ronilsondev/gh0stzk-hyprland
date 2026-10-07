@@ -1,75 +1,83 @@
-# Teste em máquina virtual e sessão gráfica
+# Atualizar e entrar na VM Arch
 
-Os testes desta cópia foram feitos na sessão KDE/X11/Wayland existente sem
-substituí-la. Hyprland, Waybar, Rofi, Dunst, Eww, Hyprlock e Hypridle não estão
-instalados. Não houve sessão de teste, captura comparativa final, screenshot
-Hyprlock, screenshot de cada barra nem teste de portal real. Veja
-`VALIDACAO.md`.
+Use o repositório público [Ronilsondev/gh0stzk-hyprland](https://github.com/Ronilsondev/gh0stzk-hyprland).
+O [README](../README.md#instalar-ou-atualizar-na-vm) mostra como baixar somente
+`instalar.sh`, fixando a mesma revisão completa no download e em `--ref`.
+Não é necessário transferir um pacote de `/tmp`. Mantenha sua instalação atual
+e seus backups.
 
-Para testar com segurança numa VM Arch:
-
-1. Use um snapshot e instale uma sessão Arch atualizada, Mesa/OpenGL funcional,
-   PipeWire e driver apropriado ao dispositivo virtual. As flags de aceleração
-   3D e o renderizador variam com VirtualBox, QEMU/KVM e VMware; sem DRM/GL
-   funcional, Hyprland pode encerrar no startup. Confirme que a VM recebe um
-   output Wayland útil e teste resolução antes de avaliar pixels.
-2. Rode o instalador completo de uma vez, que atualiza o sistema, instala os
-   pacotes oficiais e aplica os arquivos com backup:
-
-   ```bash
-   curl -fLO https://raw.githubusercontent.com/Ronilsondev/gh0stzk-hyprland/main/instalar.sh
-   bash instalar.sh --dry-run     # leia o plano antes
-   bash instalar.sh
-   ```
-
-   Se preferir separar as etapas, veja a
-   [sequência manual](#sequência-manual-se-você-não-quiser-usar-o-instalador)
-   no fim deste arquivo.
-3. Inicie em TTY com `~/.local/bin/gh0stzk-session`, ou saia e escolha
-   "Hyprland — gh0stzk" no gerenciador de login. Mantenha uma TTY/console
-   virtual disponível para recuperar o tema caso algum driver falhe.
-4. Teste launcher/Rofi, mudança de tema, restauração, escala, foco da barra,
-   captura por região e por janela, fechamento de tampa/idle, lock antes de
-   suspender, desbloqueio, clipboard de texto/imagem, áudio, notification D-Bus,
-   monitor virtual e iniciar/parar um portal de screen share.
-5. Compare `hyprctl monitors all` e `hyprctl configerrors`. Capture cada tema
-   em tamanhos conhecidos e cote `preview.webp`. Registre substituições de fonte,
-   altura/overlap dos módulos, offsets e widgets Eww.
-
-Esperado em uma VM: desempenho modesto em cena animada, blur e sombras com
-mais impacto. Se Hyprland encerrar no início, quase sempre é DRM/GL da VM, não
-a configuração; `hyprctl configerrors` e `~/.local/state/gh0stzk-hyprland/*.log`
-separam as duas coisas.
-
-No Arch gráfico já funcional, prefira criar um usuário temporário. O teste de
-resolução/VM não é uma validação de drivers de notebook nem de GPU dedicada.
-Não execute o instalador original.
-
-## Sequência manual, se você não quiser usar o instalador
-
-O `instalar.sh` é o caminho recomendado, mas os passos que ele executa podem
-ser feitos à mão. **Atualize o sistema inteiro primeiro** — o Arch proíbe
-atualização parcial:
+Na VM, dentro de uma cópia completa dessa revisão, como usuário comum. Se já estiver na sessão
+gh0stzk com perfil XDG privado, saia voluntariamente e atualize pelo TTY:
 
 ```bash
-sudo pacman -Syu --needed
-python3 install.py                       # dry-run; leia antes de aplicar
-sudo pacman -Syu --needed -- $(python3 -c 'import json; print(" ".join(json.load(open("packages.json"))["official"]))')
-python3 install.py --apply --with-fonts --with-portals --with-session
-fc-cache -f "$HOME/.local/share/fonts/gh0stzk-hyprland"
+bash instalar.sh --dry-run
+bash instalar.sh
 ```
 
-`--with-session` registra a entrada no gerenciador de login e exige `sudo` uma
-vez, com journal em `/var/lib/gh0stzk-hyprland/sessions`. Omitir `--with-session`
-mantém o início manual por TTY como única forma de entrar.
+Isso atualiza o sistema Arch com `pacman -Syu --needed`, instala os componentes
+obrigatórios, prepara recursos visuais e mantém backups em
+`~/.local/state/gh0stzk-hyprland/backups`. `local.lua`, `preferences.json`,
+overrides de temas e wallpapers escolhidos são preservados. Alterações locais
+em arquivos gerenciados causam recusa explícita em vez de serem apagadas.
 
-Para inspeção estática sem GUI:
+O tema inicial é **Emilia**; uma instalação existente mantém seu tema. O
+instalador prepara a geração sem iniciar clientes na sessão atual. Nada encerra
+ou reinicia o desktop. Não execute este procedimento na máquina principal.
+
+Saia voluntariamente e escolha **Hyprland — gh0stzk**, não a entrada genérica
+Hyprland nem o ambiente antigo. A entrada é registrada em
+`/usr/share/wayland-sessions/gh0stzk-UID.desktop`, com caminho absoluto para o
+wrapper e `--login`. Gerenciadores com suporte a sessões Wayland podem exigir
+voltar à tela de seleção para reler as entradas; não substituímos o gerenciador.
+
+Em TTY, fora de qualquer sessão gráfica:
 
 ```bash
-python3 tools/validate.py --render-dir /tmp/gh0stzk-renderizados
+~/.local/bin/gh0stzk-session
 ```
 
-Isso deixa JSON, CSS, Rasi, Hyprlock, Kitty e Dunst por tema em `/tmp`; não
-inicia compositor ou clientes Wayland. Após instalar Hyprland 0.56, o comando
-também chama `Hyprland --verify-config` com HOME temporária, quando detecta a
-opção na compilação. Esse modo checa arquivo/configuração, não cria sessão gráfica.
+O wrapper regenera a seleção salva, configura o perfil privado e verifica o
+Hyprland. Os componentes recebem os arquivos de `current`. A barra e wallpaper
+aparecem ao entrar; o terminal personalizado abre com Super+Enter, o launcher
+com Super+Espaço e widgets pelos botões do painel ou comandos abaixo.
+
+## Verificação gráfica, começando por Emilia
+
+Dentro da nova sessão:
+
+```bash
+~/.local/bin/gh0stzk theme emilia
+~/.local/bin/gh0stzk app terminal
+~/.local/bin/gh0stzk widget launchermenu
+~/.local/bin/gh0stzk widget music
+~/.local/bin/gh0stzk diagnose > ~/gh0stzk-diagnostico.json
+```
+
+Confira barra, wallpaper, terminal, launcher, notificação, ícones no Thunar,
+cursor e os widgets e o guia Alt+F1. Verifique `hyprctl configerrors` localmente. Feche os
+widgets com seus botões. Execute `gh0stzk refresh` duas vezes e confira no
+relatório que não há cópias adicionais dos componentes. Ausência de erro de
+parser não comprova layout, escala, contraste ou funcionamento dos botões.
+
+Depois teste os outros 17 temas, usando `gh0stzk list` e `gh0stzk theme NOME`.
+Em particular: Pamela tem seis painéis por monitor; Andrea composição horizontal;
+Z0mbi3 painel vertical. Teste ao menos 1600×900 e a resolução/escala da VM, e
+múltiplos monitores quando disponíveis. Confira áreas reservadas, sobreposição,
+ícones, menus e troca sem duplicações. Prévias incluídas são do **BSPWM original**
+e não servem de evidência da migração.
+
+Logs locais: `session-start.log`, `session.log` e logs de componentes em
+`~/.local/state/gh0stzk-hyprland`. Envie inicialmente apenas o JSON do diagnóstico;
+veja [DIAGNOSTICO.md](DIAGNOSTICO.md).
+
+Para recuperar, fora da sessão:
+
+```bash
+~/.local/bin/gh0stzk prepare emilia
+# ou
+~/.local/bin/gh0stzk rollback --offline
+```
+
+Backups de arquivos são restaurados pelo `install.py --restore CAMINHO --apply`.
+Pacotes/serviços e o armazenamento separado de recursos externos permanecem;
+não são removidos implicitamente. Gerações anteriores de recursos são mantidas.

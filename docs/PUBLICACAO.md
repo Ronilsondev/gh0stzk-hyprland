@@ -21,8 +21,10 @@ PROJECT_REF='main'
 
 O modo avulso (`curl` + `instalar.sh`) baixa `PROJECT_REF` e registra o commit
 aplicado em `~/.local/state/gh0stzk-hyprland/backups/*/manifest.json`. Dentro de
-uma cópia clonada com remote `origin`, o instalador também aceita a origem
-descoberta por `git remote -v`; o parâmetro `--repo` sempre tem prioridade.
+uma cópia clonada com remote `origin`, a descoberta por `git remote -v` ocorre
+somente se `PROJECT_REPO` estiver vazio; `--repo` sempre tem prioridade.
+Para reproduzir uma entrega, baixe o instalador pelo SHA completo publicado e
+passe esse mesmo SHA em `--ref`, conforme o [README](../README.md).
 
 `tools/validate.py` falha se:
 
@@ -51,7 +53,7 @@ Depois de publicar, confira o caminho de instalação real:
 
 ```bash
 curl -fLO https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/instalar.sh
-bash instalar.sh --dry-run     # deve mostrar a origem detectada e o plano completo
+bash instalar.sh --dry-run     # mostra origem fixada e limitações do modo avulso
 ```
 
 Se o `instalar.sh` avulso reclamar de origem indefinida, o `PROJECT_REPO` não foi
@@ -65,7 +67,7 @@ preenchido ou publicado — corrija e faça novo push antes de divulgar o link.
 - **Sem caminhos pessoais.** Nenhum arquivo de configuração referencia sua home.
 - **Sem logs, backups ou estado local.** `.gitignore` cobre `__pycache__/`,
   `*.log`, `*.tmp`, `backups/`, `.local/`, `.cache/`, `.venv/`, `.env*`,
-  `*.pem`, `*.key`, `.agents/`, `.codex/`, `.aws/`.
+  `*.pem`, `*.key`, `.agents/`, `.claude/`, `.codex/`, `.aws/`.
 - **`upstream/` não foi publicado.** São 328 MB de referência de desenvolvimento e
   todo recurso necessário já está vendorizado e com hash em `resources.json`.
   A referência do commit original fica preservada em `UPSTREAM.json` e

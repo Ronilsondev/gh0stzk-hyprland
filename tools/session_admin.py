@@ -47,7 +47,7 @@ def desktop(home):
     escaped = (path.replace('\\', '\\\\').replace('"', '\\"')
                .replace('`', '\\`').replace('$', '\\$').replace('%', '%%'))
     return ('[Desktop Entry]\nName=Hyprland — gh0stzk\nComment=Sessão isolada gh0stzk\n'
-            'Type=Application\nDesktopNames=Hyprland\nExec="' + escaped + '"\n').encode()
+            'Type=Application\nDesktopNames=Hyprland\nExec="' + escaped + '" --login\n').encode()
 
 
 def operation(action, uid, token=None):

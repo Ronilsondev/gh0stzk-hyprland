@@ -160,14 +160,14 @@ def render_bars(data, monitors):
             colors = data['bar_colors']
             selector = f'window#waybar.{name}'
             font = bar.get('font-0', 'JetBrainsMono Nerd Font:size=10').strip('"')
-            family = font.split(':')[0]
+            family = 'JetBrainsMono Nerd Font'
             fs = re.search(r'(pixel)?size=([\d.]+)', font)
             fontsize = number(fs[2]) * (1 if fs and fs[1] else 4 / 3) if fs else 13
             styles.append(f'{selector} {{ background: {csscolor(bar.get("background", data["palette"]["bg"]), colors)}; '
                           f'color: {csscolor(bar.get("foreground", data["palette"]["fg"]), colors)}; '
                           f'border: {border}px solid {csscolor(bar.get("border-color", "#00000000"), colors)}; '
                           f'border-radius: {number(bar.get("radius", 0))}px; '
-                          f'font-family: "{family}", "Material Design Icons Desktop", "Font Awesome 6 Free", monospace; '
+                          f'font-family: "{family}", "JetBrainsMono Nerd Font", monospace; '
                           f'font-size: {fontsize:.1f}px; }}')
             serial = 0
             for side in ('left', 'center', 'right'):
@@ -193,7 +193,7 @@ def render_bars(data, monitors):
                         styles += [f'{s} button {{ padding: 0 6px; background: transparent; color: {data["palette"]["blackb"]}; }}',
                                    f'{s} button.active {{ color: {data["palette"]["yellow"]}; }}']
                     if m.startswith(('bi', 'bd')) and orig.get('type') == 'custom/text':
-                        props.append('font-family: "MesloLGS NF"; font-size: 23px; padding: 0')
+                        props.append('font-family: "JetBrainsMono Nerd Font"; font-size: 23px; padding: 0')
                     if props:
                         styles.append(s + ' { ' + '; '.join(props) + '; }')
                     if vert:
@@ -231,6 +231,8 @@ def render(name, dest, prefs, monitors=None, wallpaper=None, overrides=None):
             data['palette'][key] = str(value)
     dest.mkdir(parents=True, exist_ok=True)
     p = data['palette']
+    p['rofi_font'] = ('Terminess Nerd Font Mono 12' if 'scientifica' in p['rofi_font'] else p['rofi_font'].replace('JetBrainsMono NF', 'JetBrainsMono Nerd Font'))
+    p['dunst_font'] = p['dunst_font'].replace('JetBrainsMono NF', 'JetBrainsMono Nerd Font')
     wall = Path(wallpaper) if wallpaper else ROOT / 'themes' / name / data['wallpaper']
     if not wall.is_file() or wall.suffix.lower() not in ('.webp', '.png', '.jpg', '.jpeg'):
         raise ValueError('Wallpaper estático inexistente ou não suportado')
@@ -260,6 +262,8 @@ def render(name, dest, prefs, monitors=None, wallpaper=None, overrides=None):
     (rofi / 'shared.rasi').write_text('* {\n' + '\n'.join(f'  {k}: ' + (json.dumps(p[v]) if k == 'font' else p[v]) + ';' for k, v in aliases.items()) + '\n}\n')
     for path in rofi.glob('*.rasi'):
         text = path.read_text().replace('~/.cache/rofi_header.webp', wallref)
+        text = re.sub(r'Jet[Bb]rains\s?Mono NF|JetBrains Mono Nerd Font|Material Design Icons Desktop', 'JetBrainsMono Nerd Font', text)
+        text = re.sub(r'icon-theme:\s*"[^"]*"', 'icon-theme: ' + json.dumps(p['gtk_icons']), text)
         text = re.sub(r'~/.config/bspwm/config/assets/', '@ROOT@/assets/menu/', text)
         # Only load drun/dmenu on Wayland; window switching uses compositor IPC.
         text = text.replace('"drun,run,window"', '"drun,run"')
@@ -317,10 +321,22 @@ label {{
     eww = dest / 'eww'
     shutil.copytree(ROOT / 'config/eww', eww, dirs_exist_ok=True)
     for path in (ROOT / 'assets/widgets').glob('*.scss'):
-        shutil.copy2(path, eww)
+        (eww / path.name).write_text(re.sub(r'font-family:[^;]+;', 'font-family: \"JetBrainsMono Nerd Font\";', path.read_text()))
+    shortcuts = []
+    for line in (ROOT / 'docs/ATALHOS.md').read_text().splitlines():
+        if line.startswith('|') and '---' not in line and not line.startswith('| Teclas'):
+            fields = [part.strip() for part in line.strip('|').split('|')]
+            shortcuts.append({'key': fields[0], 'action': fields[1]})
+    yuck = eww / 'eww.yuck'
+    yuck.write_text('(defvar shortcuts ' + json.dumps(json.dumps(shortcuts, ensure_ascii=False), ensure_ascii=False) + ')\n' + yuck.read_text())
     (eww / 'colors.scss').write_text('\n'.join(f'${k}: {p[v]};' for k, v in {
         'bg': 'bg', 'bg-alt': 'accent_color', 'fg': 'fg', 'black': 'blackb', 'red': 'red',
         'green': 'green', 'yellow': 'yellow', 'blue': 'blue', 'magenta': 'magenta', 'cyan': 'cyan', 'archicon': 'arch_icon'}.items()) + '\n')
+    for version in ('gtk-3.0', 'gtk-4.0'):
+        (dest / version).mkdir(exist_ok=True)
+        (dest / version / 'settings.ini').write_text('[Settings]\n' +
+            f'gtk-theme-name={p["gtk_theme"]}\ngtk-icon-theme-name={p["gtk_icons"]}\n' +
+            f'gtk-cursor-theme-name={p["gtk_cursor"]}\ngtk-cursor-theme-size=24\ngtk-font-name=JetBrainsMono Nerd Font 10\n')
     dump(dest / 'appearance.json', {k: p[k] for k in ('gtk_theme', 'gtk_icons', 'gtk_cursor')})
     return data
 

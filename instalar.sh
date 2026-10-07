@@ -46,7 +46,7 @@ Opções:
   --without-session     Não registra a entrada "Hyprland - gh0stzk" no gerenciador
                         de login (nada é escrito em /usr/share/wayland-sessions).
   --optional PACOTE     Acrescenta um pacote de official_optional (repetível):
-                        blueman, bluez, bluez-utils, hyprpicker, pacman-contrib,
+                        blueman, bluez, bluez-utils,
                         uwsm, shellcheck.
   --with-eww ARQUIVO    Instala um pacote eww JÁ compilado por você como usuário
                         comum, via sudo pacman -U. Não usa helper AUR.
@@ -56,7 +56,7 @@ Opções:
 Exemplos:
   bash instalar.sh --dry-run
   bash instalar.sh
-  bash instalar.sh --yes --optional hyprpicker --optional pacman-contrib
+  bash instalar.sh --yes --optional blueman --optional bluez --optional bluez-utils
   bash instalar.sh --repo https://github.com/USUARIO/REPO --ref v1.0.0   # fork
 
 Fluxo real, nesta ordem:
@@ -65,8 +65,8 @@ Fluxo real, nesta ordem:
   3. bootstrap: git/python/curl por sudo pacman -Syu --needed, se faltarem
   4. origem: usa a cópia local completa, ou baixa UM commit fixo via HTTPS
   5. sudo pacman -Syu --needed <pacotes oficiais + opcionais selecionados>
-  6. validação com os binários reais: Hyprland --verify-config, luac, Rofi,
-     Waybar, Dunst
+  6. Eww Wayland e recursos visuais HTTPS com hashes fixados; validação
+     Hyprland --verify-config e Lua; Rofi quando há display. Demais na sessão
   7. install.py --apply: arquivos isolados + backup datado. Nada é sobrescrito
      sem backup; configurações de KDE, GNOME, BSPWM, Neovim e shell ficam intactas
   8. fc-cache, habilitação apenas de serviços inexistentes e resumo final
@@ -76,9 +76,9 @@ depois instala. Não existe atualização parcial (`-Sy` seguido de instalação
 `--noconfirm` nunca é usado e `--allow-missing` nunca é usado. O fluxo não
 reinicia nem encerra a sessão atual.
 
-Aparência não é garantida: temas GTK, coleções de ícones e o cursor originais
-ficam de fora (repositório de pacotes externo do autor, sem assinatura confiável).
-O desktop funciona sem eles; veja docs/DEPENDENCIAS.md.
+Eww, GTK, ícones e cursores fazem parte do fluxo padrão. Recursos externos são
+fixados por revisão e SHA-256. Limitações dos arquivos originais são listadas
+em report.json; veja docs/DEPENDENCIAS.md. Validação visual exige entrar na sessão.
 HELP
 }
 
@@ -175,7 +175,7 @@ summary() {
     note 'Sessão atual          : não será reiniciada nem encerrada'
     note 'Gerenciador de login  : não será substituído; apenas uma entrada nova'
     note 'Backup antes de sobrescrever: ~/.local/state/gh0stzk-hyprland/backups'
-    note 'Ainda opcionais       : Eww (AUR), temas GTK, cursor e ícones do autor'
+    note 'Recursos obrigatórios : Eww Wayland, temas GTK, cursor e ícones do autor'
     note '──────────────────────────────────────────────────────────────────────────'
 }
 
@@ -185,7 +185,7 @@ note "Referência: $ref ($origin_note)"
 note ''
 note 'ATENÇÃO: este fluxo atualizará TODO o sistema com pacman -Syu --needed.'
 note 'Depois instala o desktop, valida a configuração com os binários reais e'
-note 'aplica os arquivos com backup datado. Não usa --noconfirm, não usa AUR, não'
+note 'aplica os arquivos com backup datado, gera o tema inicial e compila Eww se preciso; não'
 note 'substitui o gerenciador de login e não encerra a sua sessão.'
 summary
 
@@ -305,4 +305,4 @@ done
 
 python3 -B "$root/tools/bootstrap.py" \
     --source "${repo:-local}" --ref "$ref" "${options[@]}" ||
-    fail 'tools/bootstrap.py falhou. Nenhuma configuração foi aplicada; leia a etapa acima.'
+    fail 'Instalação incompleta: tools/bootstrap.py falhou. Etapas anteriores podem ter sido aplicadas; consulte o erro e o backup informado.'

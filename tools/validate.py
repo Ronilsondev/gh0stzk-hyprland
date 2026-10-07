@@ -252,6 +252,8 @@ def main():
         else:
             report['skipped'].append('luac ausente')
     report['hyprland_version'] = hyprland_version()
+    if shutil.which('rofi') and not (os.environ.get('WAYLAND_DISPLAY') or os.environ.get('DISPLAY')):
+        report['skipped'].append('Rofi disponível, mas parser não executado sem display; verificar na sessão.')
     report['caveats'] = [
         'luac -p valida apenas sintaxe Lua; a compatibilidade com o Hyprland exige o '
         'parser do próprio Hyprland (Hyprland --verify-config), executado acima.',

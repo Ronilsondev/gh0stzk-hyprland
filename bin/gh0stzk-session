@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Inicia a configuração isolada sem alterar o gerenciador de login."""
+"""Start the isolated desktop from a display manager or a TTY."""
+import json
 import os
 import re
 import subprocess
@@ -7,20 +8,37 @@ import sys
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(root / 'lib'))
+from session_env import configure
+
 try:
+    login = sys.argv[1:] == ['--login']
+    if sys.argv[1:] and not login:
+        raise RuntimeError('Uso: gh0stzk-session [--login (gerenciador de login)]')
     version = subprocess.check_output(['Hyprland', '--version'], text=True)
-    match = re.search(r'\b(0)\.(\d+)\.', version)
-    if not match or int(match[2]) < 56:
-        raise RuntimeError('Esta adaptação exige Hyprland 0.56 ou posterior; confira APIs antes de atualizar.')
-    if os.environ.get('WAYLAND_DISPLAY') or os.environ.get('DISPLAY'):
+    match = re.search(r'\b(\d+)\.(\d+)\.', version)
+    if not match or tuple(map(int, match.groups())) < (0, 56):
+        raise RuntimeError('Esta adaptação exige Hyprland 0.56 ou posterior.')
+    if os.environ.get('HYPRLAND_INSTANCE_SIGNATURE') or (not login and (os.environ.get('WAYLAND_DISPLAY') or os.environ.get('DISPLAY'))):
         raise RuntimeError('Inicie pelo login gráfico ou TTY fora da sessão atual.')
-    os.environ['GH0STZK_ROOT'] = str(root)
-    os.environ['XDG_CURRENT_DESKTOP'] = 'Hyprland'
+    # A greeter can leave DISPLAY set. --login is used only by our desktop entry.
+    for key in ('DISPLAY', 'WAYLAND_DISPLAY'):
+        os.environ.pop(key, None)
+    os.environ.update(GH0STZK_ROOT=str(root), XDG_CURRENT_DESKTOP='Hyprland',
+                      XDG_SESSION_DESKTOP='gh0stzk', XDG_SESSION_TYPE='wayland')
     state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'gh0stzk-hyprland'
-    if not (state / 'current').exists():
-        subprocess.run([str(root / 'bin/gh0stzk'), 'prepare', 'emilia'], check=True)
-    subprocess.run(['Hyprland', '--verify-config', '--config', str(root / 'config/hyprland.lua')], check=True)
-    os.execvp('start-hyprland', ['start-hyprland', '--', '--config', str(root / 'config/hyprland.lua')])
-except (OSError, RuntimeError, subprocess.CalledProcessError) as e:
-    print('Erro ao iniciar: ' + str(e), file=sys.stderr)
+    # Regenerate against the installed tree on every login, retaining selection/overrides.
+    subprocess.run([str(root / 'bin/gh0stzk'), 'prepare'], check=True)
+    configure(state)
+    appearance = json.loads((state / 'current/appearance.json').read_text())
+    for key, value in [('gtk-theme', appearance['gtk_theme']), ('icon-theme', appearance['gtk_icons']),
+                       ('cursor-theme', appearance['gtk_cursor']), ('font-name', 'JetBrainsMono Nerd Font 10')]:
+        subprocess.run(['gsettings', 'set', 'org.gnome.desktop.interface', key, value], check=True)
+    config = str(root / 'config/hyprland.lua')
+    with (state / 'session-start.log').open('w') as log:
+        subprocess.run(['Hyprland', '--verify-config', '--config', config], stdout=log, stderr=log, check=True)
+    (state / 'session-launch.json').write_text(json.dumps({'config': config, 'theme': json.loads((state / 'current/selection.json').read_text())['theme'], 'wrapper': str(Path(__file__).resolve())}) + '\n')
+    os.execvp('start-hyprland', ['start-hyprland', '--', '--config', config])
+except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as e:
+    print('Erro ao iniciar: ' + str(e) + '\nExecute ~/.local/bin/gh0stzk diagnose no TTY.', file=sys.stderr)
     sys.exit(1)

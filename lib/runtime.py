@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 from render import ROOT, dump, lua, materialize, render, theme
 
-CONFIG = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'gh0stzk-hyprland'
+CONFIG = Path(os.environ.get('GH0STZK_CONFIG_HOME') or os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'gh0stzk-hyprland'
 STATE = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'gh0stzk-hyprland'
 CURRENT = STATE / 'current'
 CTL = ROOT / 'bin/gh0stzk'
@@ -97,7 +97,7 @@ def validate_generation(path):
             for mod in bar['modules-' + side]:
                 if mod not in bar:
                     raise ValueError('Módulo indefinido: ' + mod)
-    if shutil.which('rofi'):
+    if shutil.which('rofi') and (os.environ.get('WAYLAND_DISPLAY') or os.environ.get('DISPLAY')):
         # dump-theme parses styles without opening a menu.
         for file in (path / 'rofi').glob('*.rasi'):
             if file.name != 'shared.rasi':
@@ -185,9 +185,26 @@ def notification_owner():
     return reply == 'b true'
 
 
+def apply_appearance():
+    if os.environ.get('GH0STZK_SESSION') != '1' or os.environ.get('GSETTINGS_BACKEND') != 'keyfile':
+        raise RuntimeError('Aparência exige a sessão gh0stzk com GSettings privado. Entre pelo wrapper.')
+    appearance = json.loads((CURRENT / 'appearance.json').read_text())
+    for key, value in [('gtk-theme', appearance['gtk_theme']), ('icon-theme', appearance['gtk_icons']),
+                       ('cursor-theme', appearance['gtk_cursor']), ('font-name', 'JetBrainsMono Nerd Font 10')]:
+        run(['gsettings', 'set', 'org.gnome.desktop.interface', key, value])
+    run(['hyprctl', 'setcursor', appearance['gtk_cursor'], '24'])
+
+
+def eww_dir():
+    return STATE / ('eww-' + registry().stem.removeprefix('processes-'))
+
+
 def services(restart=True):
     require_session()
+    apply_appearance()
     wall = next(CURRENT.glob('wallpaper.*'))
+    if foreign_process('swaybg'):
+        raise RuntimeError('Já existe swaybg externo; resolva seu autostart antes de usar esta sessão.')
     start('wallpaper', ['swaybg', '-i', wall, '-m', 'fill'], restart=restart)
     if foreign_process('waybar'):
         raise RuntimeError('Já existe Waybar externo. Desative seu autostart antes de usar esta sessão.')
@@ -196,12 +213,19 @@ def services(restart=True):
     if not own_dunst and notification_owner():
         raise RuntimeError('Outro servidor de notificações já possui o D-Bus; não será encerrado.')
     start('dunst', ['dunst', '-config', CURRENT / 'dunstrc'], restart=restart)
-    if shutil.which('eww') and prefs()['widgets']:
-        # eww configuration identity is a stable path; this is an isolated daemon.
-        if restart:
-            run(['eww', '-c', CURRENT / 'eww', 'reload'], check=False)
-        else:
-            run(['eww', '-c', CURRENT / 'eww', 'daemon'], check=False)
+    if prefs()['widgets']:
+        # Real stable directory: Eww canonicalizes -c, so a changing symlink leaks daemons.
+        target = eww_dir()
+        stop('eww')
+        shutil.copytree(CURRENT / 'eww', target, dirs_exist_ok=True)
+        start('eww', ['eww', '--force-wayland', '--no-daemonize', '-c', target, 'daemon'])
+        run(['eww', '-c', target, 'ping'])
+        windows = run(['eww', '-c', target, 'list-windows']).stdout.decode().split()
+        if not {'music', 'launchermenu', 'csheet'}.issubset(windows):
+            raise RuntimeError('Eww não carregou os widgets; consulte eww.log')
+        # Parsing/opening windows is verified separately in the graphical VM check.
+    else:
+        stop('eww')
     # Reload only terminals launched with our class and config, not unrelated kitty windows.
     for proc in Path('/proc').iterdir():
         if not proc.name.isdigit():
@@ -240,6 +264,9 @@ def apply_theme(name, offline=False, wallpaper=None):
         previous = CURRENT.resolve() if CURRENT.is_symlink() else None
         link(dest, 'current')
         try:
+            if offline and shutil.which('Hyprland'):
+                env = dict(os.environ, GH0STZK_ROOT=str(ROOT), XDG_STATE_HOME=str(STATE.parent), GH0STZK_CONFIG_HOME=str(CONFIG.parent))
+                run(['Hyprland', '--verify-config', '--config', ROOT / 'config/hyprland.lua'], env=env, timeout=30)
             if not offline:
                 run(['hyprctl', 'reload'])
                 errors = output(['hyprctl', 'configerrors'])
@@ -416,7 +443,7 @@ def session():
         if alive(records().get('watcher')):
             return
         run(['dbus-update-activation-environment', '--systemd', 'WAYLAND_DISPLAY', 'XDG_CURRENT_DESKTOP',
-             'HYPRLAND_INSTANCE_SIGNATURE'], check=False)
+             'HYPRLAND_INSTANCE_SIGNATURE'])
         apply_theme(selected()['theme'])
         if not foreign_process('hypridle'):
             start('hypridle', ['hypridle', '-c', CURRENT / 'hypridle.conf'])
@@ -425,14 +452,13 @@ def session():
         if prefs()['clipboard']:
             start('clipboard-text', ['wl-paste', '--type', 'text', '--watch', 'cliphist', 'store'])
             start('clipboard-image', ['wl-paste', '--type', 'image', '--watch', 'cliphist', 'store'])
-        if prefs()['widgets'] and shutil.which('eww'):
-            run(['eww', '-c', CURRENT / 'eww', 'daemon'], check=False)
         if prefs()['polkit'] == 'auto':
             agents = ['polkit-kde-authentication-agent-1', 'lxqt-policykit-agent', 'polkit-gnome-authentication-agent-1', 'hyprpolkitagent']
             if not any(output(['pgrep', '-u', str(os.getuid()), '-f', '/(' + '|'.join(agents) + ')( |$)']).split()):
                 if output(['systemctl', '--user', 'is-active', 'hyprpolkitagent.service']) != 'active':
                     run(['systemctl', '--user', 'start', 'hyprpolkitagent.service'], check=False)
         start('watcher', [CTL, 'watch'])
+        atomic_json(STATE / 'session-health.json', {'theme': selected()['theme'], 'components_started': True, 'visual_verified': False})
 
 
 def watch():
@@ -459,12 +485,15 @@ def main(argv=None):
     ap.add_argument('action', choices=['theme', 'rollback', 'refresh', 'wallpaper', 'launcher', 'launcher-style',
         'app', 'scratch', 'volume', 'brightness', 'media', 'network', 'bluetooth', 'clipboard', 'lock', 'power',
         'screenshot', 'keyboard', 'windows', 'help', 'widget', 'widget-data', 'status', 'updates', 'colorpicker',
-        'edit-theme', 'bar', 'session', 'watch', 'list', 'prepare'])
+        'edit-theme', 'bar', 'session', 'watch', 'list', 'prepare', 'diagnose'])
     ap.add_argument('args', nargs='*')
     ap.add_argument('--offline', action='store_true')
     args = ap.parse_args(argv)
     a, values = args.action, args.args
-    if a in ('theme', 'prepare', 'refresh'):
+    if a == 'diagnose':
+        from diagnostics import report
+        report(ROOT, STATE)
+    elif a in ('theme', 'prepare', 'refresh'):
         name = values[0] if values else selected()['theme']
         if a == 'theme' and not values:
             names = sorted(p.name for p in (ROOT / 'themes').iterdir() if (p / 'theme.json').exists())
@@ -570,18 +599,12 @@ def main(argv=None):
         if i is not None:
             dispatch('hl.dsp.focus({window=' + lua('address:' + wins[i]['address']) + '})')
     elif a == 'help':
-        lines = (ROOT / 'docs/ATALHOS.md').read_text().splitlines()
-        choose([l for l in lines if l.startswith('|') and '---' not in l], 'Atalhos')
+        main(['widget', 'csheet'])
     elif a == 'widget':
-        if not prefs()['widgets'] or not shutil.which('eww'):
-            if values[0] == 'music':
-                i = choose(['Anterior', 'Tocar/pausar', 'Próxima'], 'Música')
-                if i is not None:
-                    run(['playerctl', ['previous', 'play-pause', 'next'][i]], check=False)
-            else:
-                choose([f'{k}: {v}' for k, v in widget_data('system').items()], 'Sistema')
-        elif values[0] in ('music', 'launchermenu'):
-            run(['eww', '-c', CURRENT / 'eww', 'open', '--toggle', values[0]])
+        if not prefs()['widgets']:
+            raise RuntimeError('Widgets desativados em preferences.json; ative widgets para usar Eww.')
+        if values[0] in ('music', 'launchermenu', 'csheet'):
+            run(['eww', '-c', eww_dir(), 'open', '--toggle', values[0]])
     elif a in ('status', 'widget-data'):
         print(json.dumps(status(values[0]) if a == 'status' else widget_data(values[0]), ensure_ascii=False))
     elif a == 'updates':

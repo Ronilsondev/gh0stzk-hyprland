@@ -67,7 +67,7 @@ def dependencies():
     manifest = json.loads((ROOT / 'packages.json').read_text())
     missing = [x for x in manifest['required_commands'] if not shutil.which(x)]
     print('Pacotes oficiais: ' + ' '.join(manifest['official']))
-    print('AUR opcional: ' + ', '.join(manifest['aur_optional']))
+    print('Eww obrigatório (pacote/build): ' + ', '.join(manifest['aur_required']))
     print('Opcionais oficiais: ' + ', '.join(manifest['official_optional']))
     print('Comandos ausentes: ' + (', '.join(missing) or 'nenhum'))
     for binary, minimum in [('Hyprland', (0, 56)), ('rofi', (2, 0))]:
@@ -89,7 +89,7 @@ def plan(home, with_fonts=False, with_portals=False):
             if src.is_relative_to(ROOT / 'assets/fonts') and not src.is_relative_to(ROOT / 'assets/fonts/MapleMono-NF'):
                 continue  # only fonts with an included redistribution license
             entries.append((src, home / '.local/share' / NAME / src.relative_to(ROOT), False))
-    for name in ('LICENSE', 'UPSTREAM.json', 'packages.json', 'CREDITS.md', 'README.md', 'install.py', 'instalar.sh', 'resources.json'):
+    for name in ('LICENSE', 'UPSTREAM.json', 'packages.json', 'CREDITS.md', 'README.md', 'install.py', 'instalar.sh', 'resources.json', 'visuals.json'):
         entries.append((ROOT / name, home / '.local/share' / NAME / name, False))
     # The small Python launchers resolve a local symlink to locate the installation.
     for name in ('gh0stzk', 'gh0stzk-session'):
@@ -154,6 +154,20 @@ def restore(backup, home, apply):
     return 2 if conflicts else 0
 
 
+def prepare(home, files_only=False):
+    if files_only:
+        print('Somente arquivos: dependências, geração inicial e sessão funcional não verificadas.')
+        return
+    env = dict(os.environ, HOME=str(home), XDG_CONFIG_HOME=str(home / '.config'),
+               XDG_STATE_HOME=str(home / '.local/state'), XDG_DATA_HOME=str(home / '.local/share'))
+    for key in ('GH0STZK_CONFIG_HOME', 'GH0STZK_SESSION', 'HYPRLAND_INSTANCE_SIGNATURE', 'WAYLAND_DISPLAY', 'DISPLAY'):
+        env.pop(key, None)
+    subprocess.run([str(home / '.local/bin/gh0stzk'), 'prepare'], env=env, check=True)
+    env['GH0STZK_ROOT'] = str(home / '.local/share' / NAME)
+    subprocess.run(['Hyprland', '--verify-config', '--config', str(home / '.local/share' / NAME / 'config/hyprland.lua')],
+                   env=env, check=True)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Instalação isolada; por padrão apenas inspeciona.')
     ap.add_argument('--apply', action='store_true', help='Aplicar as alterações de arquivos')
@@ -213,6 +227,7 @@ def main(argv=None):
     if missing and not args.allow_missing:
         raise ValueError('Dependências ausentes/antigas; instale-as antes ou use --allow-missing para preparar apenas arquivos')
     if not changes and not session_change:
+        prepare(home, args.allow_missing)
         print('Instalação já corresponde aos arquivos entregues; nenhuma alteração.')
         return 0
     backup_root = home / '.local/state' / NAME / 'backups'
@@ -254,7 +269,8 @@ def main(argv=None):
         except Exception:
             print('Instalação interrompida. Backup recuperável: ' + str(backup), file=sys.stderr)
             raise
-    print('Aplicado. Backup: ' + str(backup))
+    print('Arquivos aplicados. Backup: ' + str(backup), flush=True)
+    prepare(home, args.allow_missing)
     print('Restaurar: python3 ' + shlex.quote(str(home / '.local/share' / NAME / 'install.py')) +
           ' --restore ' + shlex.quote(str(backup)) + ' --apply')
     if args.with_fonts:

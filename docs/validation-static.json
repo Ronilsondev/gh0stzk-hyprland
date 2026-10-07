@@ -3,7 +3,6 @@
     "Sintaxe Python",
     "JSON",
     "Permissões de bit/gh0stzk, gh0stzk-session e instalar.sh",
-    "ShellCheck sem avisos: 1 scripts",
     "Caminhos pessoais e comandos X11 migrados",
     "Sintaxe shell (bash -n): 1 scripts, incluindo instalar.sh",
     "instalar.sh: origem centralizada, atualização total e download de um commit",
@@ -121,6 +120,7 @@
     }
   },
   "skipped": [
+    "ShellCheck: indisponível",
     "rofi: binário ausente; parser nativo/teste funcional não executado",
     "waybar: binário ausente; parser nativo/teste funcional não executado",
     "dunst: binário ausente; parser nativo/teste funcional não executado",
